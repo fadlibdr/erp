@@ -64,27 +64,32 @@
 .fi-ta-header-cell { border-bottom:1.5px solid var(--garis-ink-1) !important; }
 
 /* --- Hazard stripe: the GARIS signature, under the top bar -------------- */
-.fi-topbar > * { position:relative; }
+.fi-topbar { position:relative; }
 .fi-topbar::after {
-  content:""; position:absolute; left:0; right:0; bottom:-4px; height:4px; z-index:30;
+  content:""; position:absolute; left:0; right:0; bottom:0; height:4px; z-index:30; pointer-events:none;
   background:repeating-linear-gradient(-45deg, var(--garis-amber-500) 0 9px, var(--garis-ink-1) 9px 18px);
 }
 
-/* --- Sidebar: Biru Baja 900 with amber active marker (GARIS nav) -------- */
-.fi-sidebar, .fi-sidebar-nav { background-color:var(--garis-biru-900); }
+/* --- Sidebar: Biru Baja 900 with amber active marker (GARIS nav) --------
+   The highest-risk override to eyeball: it recolours Filament's light sidebar to
+   the dark GARIS nav, so every nested text/icon/hover/active colour is reset. */
+.fi-sidebar, .fi-sidebar-nav, .fi-sidebar-header { background-color:var(--garis-biru-900) !important; border-color:var(--garis-biru-700) !important; }
 .fi-sidebar .fi-logo { color:#fff; }
-.fi-sidebar-group-label { color:#6D89A8; font-family:var(--garis-mono); text-transform:uppercase; letter-spacing:.12em; font-size:.68rem; }
-.fi-sidebar-item-label { color:#B9CCE0; }
-.fi-sidebar-item-icon { color:#7C99BB; }
+.fi-sidebar-group-label { color:#6D89A8 !important; font-family:var(--garis-mono); text-transform:uppercase; letter-spacing:.12em; font-size:.68rem; }
+.fi-sidebar-item-label { color:#B9CCE0 !important; }
+.fi-sidebar-item-icon { color:#7C99BB !important; }
 .fi-sidebar-item:hover .fi-sidebar-item-label,
-.fi-sidebar-item:hover .fi-sidebar-item-icon { color:#fff; }
-.fi-sidebar-item:hover .fi-sidebar-item-button { background-color:rgba(255,255,255,.06); }
-.fi-sidebar-item-active .fi-sidebar-item-button {
-  background-color:rgba(255,255,255,.10);
+.fi-sidebar-item:hover .fi-sidebar-item-icon { color:#fff !important; }
+.fi-sidebar-item:hover .fi-sidebar-item-button { background-color:rgba(255,255,255,.06) !important; }
+.fi-sidebar-item-active .fi-sidebar-item-button,
+.fi-sidebar-item .fi-active {
+  background-color:rgba(255,255,255,.10) !important;
   border-left:3px solid var(--garis-amber-500);
 }
 .fi-sidebar-item-active .fi-sidebar-item-label,
-.fi-sidebar-item-active .fi-sidebar-item-icon { color:#fff; font-weight:600; }
+.fi-sidebar-item-active .fi-sidebar-item-icon { color:#fff !important; font-weight:600; }
+/* Tenant/company switcher + collapse control sit in the dark sidebar too. */
+.fi-sidebar .fi-dropdown-trigger, .fi-sidebar-nav-tenant-menu-ctn { color:#B9CCE0; }
 
 /* --- Controls: 6px radius, crisp focus ring (GARIS --focus) ------------- */
 .fi-btn { border-radius:6px; font-weight:600; }
@@ -96,3 +101,41 @@
 
 /* --- Login page: quiet the card, let the border carry it --------------- */
 .fi-simple-main { box-shadow:none !important; border:1px solid var(--garis-beton-200); border-radius:10px; }
+
+/* ==========================================================================
+   GARIS bespoke components — fully owned classes (not Filament's), so these
+   render exactly to the spec. Used by the Blade components + widgets.
+   ========================================================================== */
+.garis-mono { font-family:var(--garis-mono); font-variant-numeric:tabular-nums; }
+
+/* Document stamp — wet-cap look, final document states only. */
+.garis-stamp {
+  display:inline-block; font-family:var(--garis-mono); font-weight:600; font-size:12px;
+  letter-spacing:.12em; text-transform:uppercase; padding:4px 12px;
+  border:2px solid currentColor; border-radius:3px; transform:rotate(-2deg); line-height:1.1;
+}
+.garis-stamp-lunas { color:#1E7F4F; }
+.garis-stamp-setuju { color:var(--garis-biru-700); }
+.garis-stamp-sp { color:#B3261E; }
+.garis-stamp-batal { color:var(--garis-ink-3); text-decoration:line-through; }
+
+/* Etiket — drawing title-block card. */
+.garis-etiket { background:#fff; border:1.5px solid var(--garis-ink-1); border-radius:10px; overflow:hidden; }
+.garis-etiket-head { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:16px 20px; border-bottom:1.5px solid var(--garis-ink-1); }
+.garis-etiket-head b { font-family:var(--garis-display); font-size:15px; font-weight:700; color:var(--garis-ink-1); }
+.garis-etiket-head span { font-family:var(--garis-mono); font-size:12px; color:var(--garis-ink-2); }
+.garis-etiket-grid { display:grid; grid-template-columns:repeat(4,1fr); }
+.garis-etiket-cell { padding:8px 16px 12px; border-right:1px solid var(--garis-beton-200); border-bottom:1px solid var(--garis-beton-200); }
+.garis-etiket-cell:nth-child(4n) { border-right:none; }
+.garis-etiket-cell small { display:block; font-family:var(--garis-mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--garis-ink-3); margin-bottom:2px; }
+.garis-etiket-cell b { font-size:12.5px; font-weight:600; color:var(--garis-ink-1); }
+.garis-etiket-cell b.garis-mono { font-size:11.5px; }
+.garis-etiket-foot { display:flex; justify-content:space-between; align-items:center; padding:12px 20px; background:var(--garis-beton-50); }
+.garis-etiket-foot .garis-mono { font-size:11px; color:var(--garis-ink-3); }
+@media(max-width:720px){ .garis-etiket-grid{grid-template-columns:repeat(2,1fr)} .garis-etiket-cell:nth-child(2n){border-right:none} }
+
+/* S-curve legend. */
+.garis-legend { display:flex; gap:20px; font-size:12px; color:var(--garis-ink-2); margin-top:12px; flex-wrap:wrap; }
+.garis-legend i { display:inline-block; width:18px; height:0; border-top:2.5px solid var(--garis-biru-600); vertical-align:middle; margin-right:6px; }
+.garis-legend i.dash { border-top-style:dashed; border-color:var(--garis-ink-3); }
+.garis-legend i.dev { border-color:var(--garis-amber-500); }
