@@ -68,9 +68,10 @@ final class NumberingService
             $format,
         );
 
-        // Replace the longest run of '#' with the zero-padded counter.
-        return preg_replace_callback('/#+/', static function (array $m) use ($value): string {
-            return str_pad((string) $value, strlen($m[0]), '0', STR_PAD_LEFT);
+        // Replace a braced run of '#' (e.g. "{####}") with the zero-padded counter,
+        // consuming the braces so "INV-{YYYY}-{####}" renders "INV-2026-0042".
+        return preg_replace_callback('/\{#+\}/', static function (array $m) use ($value): string {
+            return str_pad((string) $value, strlen($m[0]) - 2, '0', STR_PAD_LEFT);
         }, $out) ?? $out;
     }
 }
