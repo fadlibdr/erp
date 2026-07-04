@@ -6,7 +6,9 @@ namespace Modules\Payroll\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Platform\Models\Company;
 
 /**
  * A monthly payroll run for a project/WBS — the frozen totals and the fact that
@@ -49,5 +51,11 @@ final class PayRun extends Model
     public function lines(): HasMany
     {
         return $this->hasMany(PayRunLine::class);
+    }
+
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 }
