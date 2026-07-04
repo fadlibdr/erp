@@ -6,6 +6,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\BaseResource;
 use App\Filament\Resources\VendorBillResource\Pages;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
@@ -13,13 +14,16 @@ use Filament\Infolists\Components\ViewEntry;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\HtmlString;
 use Modules\Payables\Actions\ApproveMaterialBill;
 use Modules\Payables\Actions\ApproveSubcontractorBill;
+use Modules\Payables\Actions\PayVendorBills;
 use Modules\Payables\Models\VendorBill;
 use Modules\Procurement\Models\PurchaseOrder;
 use Modules\Projects\Models\Project;
@@ -112,6 +116,46 @@ final class VendorBillResource extends BaseResource
                             Notification::make()->title('Gagal menyetujui tagihan')->body($e->getMessage())->danger()->send();
                         }
                     }),
+            ])
+            ->bulkActions([
+                // Settle the selected approved bills in one payment batch.
+                BulkAction::make('pay')
+                    ->label('Bayar Terpilih')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('success')
+                    ->form([
+                        TextInput::make('payment_date')->label('Tanggal Bayar')->type('date')->required(),
+                        Select::make('bank')->label('Bank')
+                            ->options(['bca' => 'BCA', 'mandiri' => 'Mandiri', 'bni' => 'BNI', 'bri' => 'BRI'])
+                            ->default('bca')->required(),
+                    ])
+                    ->action(function (Collection $records, array $data): void {
+                        $tenant = Filament::getTenant();
+                        if ($tenant === null) {
+                            return;
+                        }
+                        $approved = $records->where('status', 'approved');
+                        if ($approved->isEmpty()) {
+                            Notification::make()->title('Tidak ada tagihan berstatus "approved" yang dipilih.')->warning()->send();
+
+                            return;
+                        }
+                        try {
+                            $batch = app(PayVendorBills::class)->execute(
+                                (string) $tenant->getKey(),
+                                $approved->pluck('id')->all(),
+                                $data['payment_date'],
+                                $data['bank'],
+                            );
+                            Notification::make()
+                                ->title('Batch pembayaran dibuat.')
+                                ->body($approved->count().' tagihan dibayar, total Rp '.number_format((int) $batch->total_minor, 0, ',', '.').'.')
+                                ->success()->send();
+                        } catch (Throwable $e) {
+                            Notification::make()->title('Pembayaran gagal')->body($e->getMessage())->danger()->send();
+                        }
+                    })
+                    ->deselectRecordsAfterCompletion(),
             ])
             ->defaultSort('created_at', 'desc');
     }

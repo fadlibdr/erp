@@ -6,7 +6,9 @@ namespace Modules\Payables\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Platform\Models\Company;
 
 /**
  * A payment batch — one bank run settling a set of approved vendor bills. Posting
@@ -32,5 +34,11 @@ final class PaymentBatch extends Model
     public function lines(): HasMany
     {
         return $this->hasMany(PaymentBatchLine::class);
+    }
+
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 }

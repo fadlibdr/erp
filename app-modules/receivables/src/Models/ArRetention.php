@@ -6,6 +6,8 @@ namespace Modules\Receivables\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Platform\Models\Company;
 
 /**
  * The retention withheld by a customer on a termin — held until final hand-over
@@ -35,4 +37,10 @@ final class ArRetention extends Model
         'expected_release_date' => 'date',
         'released_at' => 'datetime',
     ];
+
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
 }

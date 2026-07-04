@@ -6,6 +6,8 @@ namespace Modules\Receivables\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Platform\Models\Company;
 
 /**
  * A customer AR invoice, born from a termin (billing) fact. Settled by cash receipts;
@@ -32,4 +34,10 @@ final class ArInvoice extends Model
     ];
 
     protected $casts = ['invoice_date' => 'date', 'gross_minor' => 'integer', 'net_minor' => 'integer'];
+
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
 }
