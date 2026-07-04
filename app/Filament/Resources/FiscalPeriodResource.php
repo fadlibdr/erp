@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Filament\BaseResource;
 use App\Filament\Resources\FiscalPeriodResource\Pages;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -29,7 +29,7 @@ use Throwable;
  * dependency law — and hands them to CloseFiscalPeriod, which owns the PSAK 72
  * recognition, the posting, and the lock.
  */
-final class FiscalPeriodResource extends Resource
+final class FiscalPeriodResource extends BaseResource
 {
     protected static ?string $model = FiscalPeriod::class;
 

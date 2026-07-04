@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Filament\BaseResource;
 use App\Filament\Resources\PurchaseOrderResource\Pages;
 use App\Filament\Resources\PurchaseOrderResource\RelationManagers\LinesRelationManager;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -25,7 +25,7 @@ use Throwable;
  * approves but flags the row. The UI never posts or checks budgets itself — it only
  * calls the Action, so all the cost-control logic stays in one tested place.
  */
-final class PurchaseOrderResource extends Resource
+final class PurchaseOrderResource extends BaseResource
 {
     protected static ?string $model = PurchaseOrder::class;
 

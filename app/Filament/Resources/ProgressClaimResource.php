@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Filament\BaseResource;
 use App\Filament\Resources\ProgressClaimResource\Pages;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -24,7 +24,7 @@ use Throwable;
  * IssueTerminInvoice, which computes the termin (work − uang muka − retensi + PPN,
  * PPh final withheld) and publishes the fact the ledger and e-Faktur both consume.
  */
-final class ProgressClaimResource extends Resource
+final class ProgressClaimResource extends BaseResource
 {
     protected static ?string $model = ProgressClaim::class;
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Filament\BaseResource;
 use App\Filament\Resources\VendorBillResource\Pages;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -11,7 +12,6 @@ use Filament\Forms\Form;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -31,7 +31,7 @@ use Throwable;
  * the withholder), decomposes the bill, and publishes the fact Finance posts as a
  * balanced accrual.
  */
-final class VendorBillResource extends Resource
+final class VendorBillResource extends BaseResource
 {
     protected static ?string $model = VendorBill::class;
 

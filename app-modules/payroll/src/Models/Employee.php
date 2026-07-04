@@ -6,6 +6,8 @@ namespace Modules\Payroll\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Platform\Models\Company;
 use Modules\Tax\Domain\PtkpStatus;
 
 /**
@@ -31,5 +33,11 @@ final class Employee extends Model
     public function ptkp(): PtkpStatus
     {
         return PtkpStatus::from($this->ptkp_status);
+    }
+
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 }

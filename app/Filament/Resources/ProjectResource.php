@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Filament\BaseResource;
 use App\Filament\Resources\ProjectResource\Pages;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Modules\Projects\Models\Project;
@@ -18,7 +18,7 @@ use Modules\Projects\Models\Project;
  * uang muka %) and the PPh-final regime (contract date). Money is edited in minor
  * units (whole rupiah for IDR) — the same integers the domain stores, no float step.
  */
-final class ProjectResource extends Resource
+final class ProjectResource extends BaseResource
 {
     protected static ?string $model = Project::class;
 

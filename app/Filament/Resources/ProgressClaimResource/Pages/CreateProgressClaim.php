@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\ProgressClaimResource\Pages;
 
+use App\Filament\BaseCreateRecord;
 use App\Filament\Resources\ProgressClaimResource;
-use Filament\Resources\Pages\CreateRecord;
 
-final class CreateProgressClaim extends CreateRecord
+final class CreateProgressClaim extends BaseCreateRecord
 {
     protected static string $resource = ProgressClaimResource::class;
 }

@@ -6,6 +6,8 @@ namespace Modules\Procurement\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Platform\Models\Company;
 
 /**
  * A supplier or subcontractor. Two fields drive downstream tax behaviour and are
@@ -36,4 +38,10 @@ final class Vendor extends Model
     protected $casts = [
         'is_pkp' => 'boolean',
     ];
+
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
 }

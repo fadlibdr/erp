@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Filament\BaseResource;
 use App\Filament\Resources\JournalResource\Pages;
 use App\Filament\Resources\JournalResource\RelationManagers\LinesRelationManager;
-use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -18,7 +18,7 @@ use Modules\Finance\Models\Journal;
  * only inspection. Every posting that any module's fact produced lands here,
  * sliceable by the fact type that created it.
  */
-final class JournalResource extends Resource
+final class JournalResource extends BaseResource
 {
     protected static ?string $model = Journal::class;
 
