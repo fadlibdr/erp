@@ -85,6 +85,22 @@ final class ConstructionLedgerSeeder
         'inventory' => '1301',
     ];
 
+    /** posting role => account code, for settlement facts (Pass 5B) */
+    private const VENDOR_PAYMENT_ROLES = [
+        'accounts_payable' => '2101',
+        'bank' => '1101',
+    ];
+
+    private const CUSTOMER_RECEIPT_ROLES = [
+        'bank' => '1101',
+        'accounts_receivable' => '1102',
+    ];
+
+    private const RETENTION_RELEASE_ROLES = [
+        'bank' => '1101',
+        'retention_receivable' => '1103',
+    ];
+
     public function seedForCompany(string $companyId): void
     {
         foreach (self::ACCOUNTS as $code => [$name, $type]) {
@@ -100,6 +116,9 @@ final class ConstructionLedgerSeeder
         $this->seedRoles($companyId, 'finance.revenue_recognized', self::REVENUE_RECOGNITION_ROLES);
         $this->seedRoles($companyId, 'payables.material_bill_approved', self::MATERIAL_BILL_ROLES);
         $this->seedRoles($companyId, 'inventory.material_issued', self::MATERIAL_ISSUE_ROLES);
+        $this->seedRoles($companyId, 'payables.payment_made', self::VENDOR_PAYMENT_ROLES);
+        $this->seedRoles($companyId, 'receivables.receipt_received', self::CUSTOMER_RECEIPT_ROLES);
+        $this->seedRoles($companyId, 'receivables.retention_released', self::RETENTION_RELEASE_ROLES);
     }
 
     /**

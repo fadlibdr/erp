@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace Modules\Finance\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Modules\Finance\Domain\Ledger\CustomerReceiptPostingRule;
 use Modules\Finance\Domain\Ledger\GrnPostingRule;
 use Modules\Finance\Domain\Ledger\MaterialBillPostingRule;
 use Modules\Finance\Domain\Ledger\MaterialIssuePostingRule;
 use Modules\Finance\Domain\Ledger\ProgressInvoicePostingRule;
 use Modules\Finance\Domain\Ledger\Psak72PostingRule;
+use Modules\Finance\Domain\Ledger\RetentionReleasePostingRule;
 use Modules\Finance\Domain\Ledger\VendorBillPostingRule;
+use Modules\Finance\Domain\Ledger\VendorPaymentPostingRule;
 use Modules\Finance\Services\CommitmentProjector;
 use Modules\Finance\Services\LedgerPosting;
 use Modules\Finance\Services\OutboxRelay;
@@ -33,6 +36,9 @@ final class FinanceServiceProvider extends ServiceProvider
             $engine->register(new Psak72PostingRule);       // Pass 3: month-end recognition
             $engine->register(new MaterialBillPostingRule); // Pass 4: clears GR/IR on the bill
             $engine->register(new MaterialIssuePostingRule); // Pass 5A: material → project cost
+            $engine->register(new VendorPaymentPostingRule);    // Pass 5B: AP settlement
+            $engine->register(new CustomerReceiptPostingRule);  // Pass 5B: AR receipt
+            $engine->register(new RetentionReleasePostingRule); // Pass 5B: retention release
 
             return $engine;
         });

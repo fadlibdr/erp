@@ -38,9 +38,12 @@ use Modules\Finance\Domain\Ledger\GrnPostingRule;
 use Modules\Finance\Domain\Ledger\JournalDraft;
 use Modules\Finance\Domain\Ledger\JournalLineDraft;
 use Modules\Finance\Domain\Ledger\LedgerException;
+use Modules\Finance\Domain\Ledger\CustomerReceiptPostingRule;
 use Modules\Finance\Domain\Ledger\MaterialBillPostingRule;
 use Modules\Finance\Domain\Ledger\MaterialIssuePostingRule;
 use Modules\Finance\Domain\Ledger\ProgressInvoicePostingRule;
+use Modules\Finance\Domain\Ledger\RetentionReleasePostingRule;
+use Modules\Finance\Domain\Ledger\VendorPaymentPostingRule;
 use Modules\Finance\Domain\Ledger\Psak72PostingRule;
 use Modules\Finance\Domain\Ledger\VendorBillPostingRule;
 use Modules\Finance\Domain\Psak72Calculator;
@@ -516,6 +519,45 @@ test('material issue posts a balanced project-cost entry (Dr cost / Cr inventory
     assertSameInt(350_000, $debits, 'movement = issued value');
     assertTrue($journal->lines[0]->accountCode === '5102' && ! $journal->lines[0]->debit->isZero(), 'debits project material cost');
     assertTrue($journal->lines[1]->accountCode === '1301' && ! $journal->lines[1]->credit->isZero(), 'credits inventory');
+});
+
+// --- Settlement (Pass 5B — cash leg of both money paths) ---------------------
+fwrite(STDOUT, "\nSettlement (AP payment / AR receipt / retention release)\n");
+
+test('settlement posting rules each book a balanced two-line cash entry', function () use ($IDR) {
+    $c = $IDR->value;
+
+    // AP payment: Dr Accounts Payable / Cr Bank.
+    $pay = (new VendorPaymentPostingRule)->toJournal(
+        ['batch_id' => 'PB-1', 'currency' => $c, 'amount' => 888_000],
+        new AccountMap(['accounts_payable' => '2101', 'bank' => '1101']),
+    );
+    assertSameInt(888_000, $pay->lines[0]->debit->minor, 'AP debited');
+    assertTrue($pay->lines[0]->accountCode === '2101' && $pay->lines[1]->accountCode === '1101', 'Dr AP / Cr Bank');
+
+    // AR receipt: Dr Bank / Cr Accounts Receivable.
+    $rcpt = (new CustomerReceiptPostingRule)->toJournal(
+        ['receipt_id' => 'RC-1', 'project_id' => 'PRJ-1', 'currency' => $c, 'amount' => 833_500],
+        new AccountMap(['bank' => '1101', 'accounts_receivable' => '1102']),
+    );
+    assertTrue($rcpt->lines[0]->accountCode === '1101' && $rcpt->lines[1]->accountCode === '1102', 'Dr Bank / Cr AR');
+
+    // Retention release: Dr Bank / Cr Retention Receivable.
+    $rel = (new RetentionReleasePostingRule)->toJournal(
+        ['retention_id' => 'RT-1', 'project_id' => 'PRJ-1', 'currency' => $c, 'amount' => 50_000],
+        new AccountMap(['bank' => '1101', 'retention_receivable' => '1103']),
+    );
+    assertTrue($rel->lines[0]->accountCode === '1101' && $rel->lines[1]->accountCode === '1103', 'Dr Bank / Cr Retention');
+
+    foreach ([$pay, $rcpt, $rel] as $j) {
+        $d = 0;
+        $cr = 0;
+        foreach ($j->lines as $l) {
+            $d += $l->debit->minor;
+            $cr += $l->credit->minor;
+        }
+        assertSameInt($cr, $d, 'settlement journal balances');
+    }
 });
 
 // --- e-Faktur (Pass 3, leg C) ------------------------------------------------
