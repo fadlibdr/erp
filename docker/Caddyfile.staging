@@ -1,0 +1,9 @@
+# Staging TLS reverse proxy for the KARYA panel.
+# Caddy terminates HTTPS (auto Let's Encrypt cert for the domain) on 443, redirects
+# 80 -> 443, and proxies to the Laravel dev server on an internal port.
+erp1.pi2.co.id {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8000 {
+		header_up X-Forwarded-Proto https
+	}
+}

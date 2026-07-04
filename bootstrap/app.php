@@ -13,7 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Behind the Caddy TLS reverse proxy: honour X-Forwarded-Proto/Host so the
+        // app knows requests are HTTPS and generates https:// URLs and secure cookies.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
