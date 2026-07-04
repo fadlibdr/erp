@@ -35,7 +35,18 @@ final class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->colors(['primary' => Color::Amber])
+            // GARIS palette: Biru Baja is every interactive/primary surface, Amber K3
+            // is the single attention accent, Beton the warm neutral, and the semantics
+            // (hijau/merah) keep their meaning. Hues anchored to the GARIS spec.
+            ->colors([
+                'primary' => Color::hex('#17497E'),   // Biru Baja
+                'gray' => Color::Stone,               // Beton (warm neutral)
+                'info' => Color::hex('#1B5693'),
+                'warning' => Color::hex('#EDA200'),   // Amber K3
+                'success' => Color::hex('#1E7F4F'),   // Hijau
+                'danger' => Color::hex('#B3261E'),    // Merah
+            ])
+            ->font('Public Sans')
             ->brandName('KARYA')
             // Multi-company tenancy (the KSO substrate): every tenant-aware resource
             // is scoped to the chosen company via each record's company() relation,

@@ -1,0 +1,98 @@
+/* ==========================================================================
+   GARIS — design-system layer for the KARYA Filament panel.
+   Applied over Filament v3 via a head render hook (see AdminPanelProvider).
+   The palette (primary/gray/warning/success/danger) is set in PHP; this file
+   carries what the color API can't: the three-font system, border-first
+   surfaces, mono-tabular numbers, the hazard stripe, and the amber active-nav.
+   Token source of truth: the GARIS spec.
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --garis-beton-50:#F7F7F5; --garis-beton-100:#EDEDEA; --garis-beton-200:#DEDEDA; --garis-beton-300:#C7C8C2;
+  --garis-ink-1:#1A1C20; --garis-ink-2:#43464D; --garis-ink-3:#6B6E76;
+  --garis-biru-900:#0E2C4E; --garis-biru-700:#17497E; --garis-biru-600:#1B5693; --garis-biru-50:#EFF5FB;
+  --garis-amber-500:#EDA200; --garis-amber-700:#8A5A00;
+  --garis-display:'Archivo',ui-sans-serif,system-ui,sans-serif;
+  --garis-mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+
+/* --- Body & app surface ------------------------------------------------- */
+.fi-body { font-family:'Public Sans',ui-sans-serif,system-ui,sans-serif; }
+.fi-main, .fi-body { background-color:var(--garis-beton-50); }
+
+/* --- Display type: headings, page & section titles, brand, stat values --- */
+.fi-header-heading,
+.fi-section-header-heading,
+.fi-modal-heading,
+.fi-ta-header-heading,
+.fi-wi-stats-overview-stat-value,
+.fi-logo {
+  font-family:var(--garis-display);
+  letter-spacing:-.01em;
+}
+.fi-logo { font-weight:800; letter-spacing:.02em; }
+
+/* --- Numbers are first-class: tabular everywhere, mono where it counts --- */
+.fi-ta-table, .fi-ta-text, .fi-badge, .fi-in-text,
+.fi-wi-stats-overview-stat-value, .fi-wi-stats-overview-stat-description {
+  font-variant-numeric:tabular-nums;
+}
+.fi-ta-header-cell-label,
+.fi-badge,
+.fi-wi-stats-overview-stat-value,
+.fi-ta-text-item-label.fi-ta-text-item-badge {
+  font-family:var(--garis-mono);
+}
+/* Column headers: uppercase mono, GARIS table language. */
+.fi-ta-header-cell-label {
+  text-transform:uppercase; letter-spacing:.06em; font-size:.72rem; font-weight:600;
+}
+
+/* --- Border, not shadow: surfaces read as engineering documents --------- */
+.fi-section,
+.fi-wi-stats-overview-stat,
+.fi-ta-ctn,
+.fi-fo-component-ctn,
+.fi-modal-window,
+.fi-dropdown-panel {
+  box-shadow:none !important;
+  border:1px solid var(--garis-beton-200) !important;
+  border-radius:10px;
+}
+/* Emphasise the total/footer and header rules like a spec sheet. */
+.fi-ta-header-cell { border-bottom:1.5px solid var(--garis-ink-1) !important; }
+
+/* --- Hazard stripe: the GARIS signature, under the top bar -------------- */
+.fi-topbar > * { position:relative; }
+.fi-topbar::after {
+  content:""; position:absolute; left:0; right:0; bottom:-4px; height:4px; z-index:30;
+  background:repeating-linear-gradient(-45deg, var(--garis-amber-500) 0 9px, var(--garis-ink-1) 9px 18px);
+}
+
+/* --- Sidebar: Biru Baja 900 with amber active marker (GARIS nav) -------- */
+.fi-sidebar, .fi-sidebar-nav { background-color:var(--garis-biru-900); }
+.fi-sidebar .fi-logo { color:#fff; }
+.fi-sidebar-group-label { color:#6D89A8; font-family:var(--garis-mono); text-transform:uppercase; letter-spacing:.12em; font-size:.68rem; }
+.fi-sidebar-item-label { color:#B9CCE0; }
+.fi-sidebar-item-icon { color:#7C99BB; }
+.fi-sidebar-item:hover .fi-sidebar-item-label,
+.fi-sidebar-item:hover .fi-sidebar-item-icon { color:#fff; }
+.fi-sidebar-item:hover .fi-sidebar-item-button { background-color:rgba(255,255,255,.06); }
+.fi-sidebar-item-active .fi-sidebar-item-button {
+  background-color:rgba(255,255,255,.10);
+  border-left:3px solid var(--garis-amber-500);
+}
+.fi-sidebar-item-active .fi-sidebar-item-label,
+.fi-sidebar-item-active .fi-sidebar-item-icon { color:#fff; font-weight:600; }
+
+/* --- Controls: 6px radius, crisp focus ring (GARIS --focus) ------------- */
+.fi-btn { border-radius:6px; font-weight:600; }
+.fi-input, .fi-select-input, .fi-textarea { border-radius:6px; }
+*:focus-visible { outline:2px solid var(--garis-biru-600); outline-offset:2px; }
+
+/* --- Row hover tint matches GARIS table (biru-50) ---------------------- */
+.fi-ta-row:hover { background-color:var(--garis-biru-50); }
+
+/* --- Login page: quiet the card, let the border carry it --------------- */
+.fi-simple-main { box-shadow:none !important; border:1px solid var(--garis-beton-200); border-radius:10px; }
