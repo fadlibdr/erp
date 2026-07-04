@@ -1,0 +1,89 @@
+# Module-boundary enforcement. A build fails here rather than a reviewer catching it.
+#
+# The rule mirrors the blueprint's dependency law:
+#   domain modules  ->  {Finance, Tax}  ->  Platform
+# Cross-module writes only ever happen through the outbox (a Platform primitive),
+# never by one domain module reaching into another's models. Platform depends on
+# nothing; Reporting is a leaf nothing depends on.
+parameters:
+  paths:
+    - ./app-modules
+  layers:
+    - name: Platform
+      collectors:
+        - type: className
+          value: ^Modules\\Platform\\
+    - name: Finance
+      collectors:
+        - type: className
+          value: ^Modules\\Finance\\
+    - name: Tax
+      collectors:
+        - type: className
+          value: ^Modules\\Tax\\
+    - name: Projects
+      collectors:
+        - type: className
+          value: ^Modules\\Projects\\
+    - name: Procurement
+      collectors:
+        - type: className
+          value: ^Modules\\Procurement\\
+    - name: Inventory
+      collectors:
+        - type: className
+          value: ^Modules\\Inventory\\
+    - name: Receivables
+      collectors:
+        - type: className
+          value: ^Modules\\Receivables\\
+    - name: Payables
+      collectors:
+        - type: className
+          value: ^Modules\\Payables\\
+    - name: Billing
+      collectors:
+        - type: className
+          value: ^Modules\\Billing\\
+    - name: Reporting
+      collectors:
+        - type: className
+          value: ^Modules\\Reporting\\
+
+  ruleset:
+    Platform: ~
+    Finance:
+      - Platform
+    Tax:
+      - Platform
+    Projects:
+      - Platform
+    Procurement:
+      - Platform
+      - Projects
+      - Finance
+      - Tax
+    Inventory:
+      - Platform
+      - Projects
+      - Procurement
+      - Finance
+    Receivables:
+      - Platform
+      - Finance
+      - Tax
+    Payables:
+      - Platform
+      - Finance
+      - Tax
+      - Procurement
+    Billing:
+      - Platform
+      - Projects
+      - Receivables
+      - Tax
+      # NOTE: Billing depends on Finance only through published facts/contracts,
+      # not the Finance layer directly — posting is done by Finance consuming the
+      # outbox. Keep Finance out of this list to prove that seam holds.
+    Reporting:
+      - Platform

@@ -1,0 +1,20 @@
+{
+    "name": "karya/platform",
+    "description": "Foundation: multi-company, numbering, outbox, audit, custom fields, approvals",
+    "license": "proprietary",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Platform\\": "src/",
+            "Modules\\Platform\\Database\\Factories\\": "database/factories/",
+            "Modules\\Platform\\Database\\Seeders\\": "database/seeders/",
+            "Modules\\Platform\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\Platform\\Providers\\PlatformServiceProvider"
+            ]
+        }
+    }
+}

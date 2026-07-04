@@ -1,0 +1,20 @@
+{
+    "name": "karya/reporting",
+    "description": "Read-only report builder, Excel import/export, print templates",
+    "license": "proprietary",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Reporting\\": "src/",
+            "Modules\\Reporting\\Database\\Factories\\": "database/factories/",
+            "Modules\\Reporting\\Database\\Seeders\\": "database/seeders/",
+            "Modules\\Reporting\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\Reporting\\Providers\\ReportingServiceProvider"
+            ]
+        }
+    }
+}

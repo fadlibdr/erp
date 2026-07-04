@@ -1,0 +1,20 @@
+{
+    "name": "karya/procurement",
+    "description": "PR/RFQ/PO with budget commitment control, TKDN",
+    "license": "proprietary",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Procurement\\": "src/",
+            "Modules\\Procurement\\Database\\Factories\\": "database/factories/",
+            "Modules\\Procurement\\Database\\Seeders\\": "database/seeders/",
+            "Modules\\Procurement\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\Procurement\\Providers\\ProcurementServiceProvider"
+            ]
+        }
+    }
+}

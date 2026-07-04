@@ -1,0 +1,20 @@
+{
+    "name": "karya/billing",
+    "description": "Progress claims, Berita Acara chain, termin billing engine",
+    "license": "proprietary",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Billing\\": "src/",
+            "Modules\\Billing\\Database\\Factories\\": "database/factories/",
+            "Modules\\Billing\\Database\\Seeders\\": "database/seeders/",
+            "Modules\\Billing\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\Billing\\Providers\\BillingServiceProvider"
+            ]
+        }
+    }
+}

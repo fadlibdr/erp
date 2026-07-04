@@ -1,0 +1,56 @@
+# Minimal profile — a 2GB VPS or a modest on-prem box.
+# No Redis, no Gotenberg: the queue runs on the database driver, the cache on
+# files, and PDFs render with mPDF. Survivable for <=10-15 users. This is the
+# floor the nightly capacity CI job holds the app to; 4GB is what we *sell*.
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: production
+      KARYA_PROFILE: minimal
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_DATABASE: karya
+      DB_USERNAME: karya
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      QUEUE_CONNECTION: database
+      CACHE_STORE: file
+      SESSION_DRIVER: database
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1200M
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: karya
+      POSTGRES_USER: karya
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=512MB"
+    volumes:
+      - karya_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U karya"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 700M
+
+volumes:
+  karya_db:

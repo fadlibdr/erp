@@ -1,0 +1,20 @@
+{
+    "name": "karya/tax",
+    "description": "Indonesian statutory tax: PPh final konstruksi, PPN, e-Faktur outbox",
+    "license": "proprietary",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Tax\\": "src/",
+            "Modules\\Tax\\Database\\Factories\\": "database/factories/",
+            "Modules\\Tax\\Database\\Seeders\\": "database/seeders/",
+            "Modules\\Tax\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\Tax\\Providers\\TaxServiceProvider"
+            ]
+        }
+    }
+}

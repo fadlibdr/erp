@@ -1,0 +1,20 @@
+{
+    "name": "karya/payables",
+    "description": "Vendor bills, 3-way match, payment batches",
+    "license": "proprietary",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Payables\\": "src/",
+            "Modules\\Payables\\Database\\Factories\\": "database/factories/",
+            "Modules\\Payables\\Database\\Seeders\\": "database/seeders/",
+            "Modules\\Payables\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\Payables\\Providers\\PayablesServiceProvider"
+            ]
+        }
+    }
+}

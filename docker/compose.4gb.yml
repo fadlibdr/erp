@@ -1,0 +1,58 @@
+# Standard profile — 4-8GB. The contractual floor on sales collateral.
+# Adds Redis + Horizon (real queues) and Gotenberg (pixel-perfect PDF via
+# headless Chromium). Comfortable for 25-50 users.
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: production
+      KARYA_PROFILE: standard
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_DATABASE: karya
+      DB_USERNAME: karya
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      REDIS_HOST: redis
+      GOTENBERG_URL: http://gotenberg:3000
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: karya
+      POSTGRES_USER: karya
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - karya_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U karya"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - karya_redis:/data
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    restart: unless-stopped
+
+volumes:
+  karya_db:
+  karya_redis:

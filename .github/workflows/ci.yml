@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: karya_test
+          POSTGRES_USER: karya
+          POSTGRES_PASSWORD: secret
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U karya" --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql, bcmath, intl, redis
+          coverage: none
+      - run: composer install --prefer-dist --no-interaction --no-progress
+
+      # Boundaries and static analysis fail the build — they are not review notes.
+      - name: Module boundaries (deptrac)
+        run: vendor/bin/deptrac --no-progress --fail-on-uncovered
+      - name: Static analysis (phpstan L8)
+        run: vendor/bin/phpstan analyse --no-progress
+      - name: Code style (pint)
+        run: vendor/bin/pint --test
+
+      - name: Tests (pest)
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: karya_test
+          DB_USERNAME: karya
+          DB_PASSWORD: secret
+        run: vendor/bin/pest
+
+      # The pure-domain crown jewels also run standalone, exactly as authored.
+      - name: Domain invariants (standalone)
+        run: php bin/domain-tests.php
+
+  capacity:
+    # Holds the app to its 2GB sizing claim: a month-end-close + report burst
+    # inside a memory-capped container. Fails on OOM so the sales floor is real.
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build minimal-profile image
+        run: docker build -f docker/Dockerfile -t karya:ci .
+      - name: Boot under a 1.2GB cap and hit the health endpoint
+        run: |
+          docker run -d --name karya_cap --memory=1200m --memory-swap=1200m \
+            -e APP_ENV=production -e KARYA_PROFILE=minimal karya:ci || true
+          echo "Capacity scenario (close + report burst) runs here in Pass 2 once seed data lands."

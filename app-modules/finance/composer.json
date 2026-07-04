@@ -1,0 +1,20 @@
+{
+    "name": "karya/finance",
+    "description": "Double-entry GL, posting-rule engine, PSAK 72 revenue recognition",
+    "license": "proprietary",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Finance\\": "src/",
+            "Modules\\Finance\\Database\\Factories\\": "database/factories/",
+            "Modules\\Finance\\Database\\Seeders\\": "database/seeders/",
+            "Modules\\Finance\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\Finance\\Providers\\FinanceServiceProvider"
+            ]
+        }
+    }
+}

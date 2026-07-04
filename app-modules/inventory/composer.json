@@ -1,0 +1,20 @@
+{
+    "name": "karya/inventory",
+    "description": "Site warehouses, moving-average stock ledger, material issue to WBS",
+    "license": "proprietary",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Inventory\\": "src/",
+            "Modules\\Inventory\\Database\\Factories\\": "database/factories/",
+            "Modules\\Inventory\\Database\\Seeders\\": "database/seeders/",
+            "Modules\\Inventory\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\Inventory\\Providers\\InventoryServiceProvider"
+            ]
+        }
+    }
+}
