@@ -34,6 +34,9 @@ final class ConstructionLedgerSeeder
         '2109' => ['Akrual Penerimaan Barang (GR/IR)', AccountType::Liability],
         '1171' => ['Aset Kontrak (Pendapatan Belum Ditagih)', AccountType::Asset],
         '2181' => ['Liabilitas Kontrak (Tagihan Diterima Dimuka)', AccountType::Liability],
+        // Pass 5: cash/bank (settlement + payroll), material cost, payroll payables.
+        '1101' => ['Kas & Bank', AccountType::Asset],
+        '5102' => ['Beban Material Proyek', AccountType::Expense],
     ];
 
     /** posting role => account code, for the progress-invoice fact */
@@ -76,6 +79,12 @@ final class ConstructionLedgerSeeder
         'retention_payable' => '2104',
     ];
 
+    /** posting role => account code, for a material issue → project cost (Pass 5A) */
+    private const MATERIAL_ISSUE_ROLES = [
+        'project_material_cost' => '5102',
+        'inventory' => '1301',
+    ];
+
     public function seedForCompany(string $companyId): void
     {
         foreach (self::ACCOUNTS as $code => [$name, $type]) {
@@ -90,6 +99,7 @@ final class ConstructionLedgerSeeder
         $this->seedRoles($companyId, 'procurement.goods_received', self::GRN_ROLES);
         $this->seedRoles($companyId, 'finance.revenue_recognized', self::REVENUE_RECOGNITION_ROLES);
         $this->seedRoles($companyId, 'payables.material_bill_approved', self::MATERIAL_BILL_ROLES);
+        $this->seedRoles($companyId, 'inventory.material_issued', self::MATERIAL_ISSUE_ROLES);
     }
 
     /**

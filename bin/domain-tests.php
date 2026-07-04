@@ -39,6 +39,7 @@ use Modules\Finance\Domain\Ledger\JournalDraft;
 use Modules\Finance\Domain\Ledger\JournalLineDraft;
 use Modules\Finance\Domain\Ledger\LedgerException;
 use Modules\Finance\Domain\Ledger\MaterialBillPostingRule;
+use Modules\Finance\Domain\Ledger\MaterialIssuePostingRule;
 use Modules\Finance\Domain\Ledger\ProgressInvoicePostingRule;
 use Modules\Finance\Domain\Ledger\Psak72PostingRule;
 use Modules\Finance\Domain\Ledger\VendorBillPostingRule;
@@ -495,6 +496,26 @@ test('material bill has no PPh withholding and clears via a balanced GR/IR entry
     foreach ($journal->lines as $line) {
         assertTrue($line->accountCode !== '2104', 'no zero retention line');
     }
+});
+
+test('material issue posts a balanced project-cost entry (Dr cost / Cr inventory)', function () use ($IDR) {
+    $accounts = new AccountMap(['project_material_cost' => '5102', 'inventory' => '1301']);
+    $payload = [
+        'issue_id' => 'ISS-1', 'project_id' => 'PRJ-1', 'wbs_id' => 'W1', 'cost_code' => 'MAT',
+        'currency' => $IDR->value, 'amount' => 350_000,
+    ];
+    $journal = (new MaterialIssuePostingRule)->toJournal($payload, $accounts);
+
+    $debits = 0;
+    $credits = 0;
+    foreach ($journal->lines as $line) {
+        $debits += $line->debit->minor;
+        $credits += $line->credit->minor;
+    }
+    assertSameInt($credits, $debits, 'material issue journal balances');
+    assertSameInt(350_000, $debits, 'movement = issued value');
+    assertTrue($journal->lines[0]->accountCode === '5102' && ! $journal->lines[0]->debit->isZero(), 'debits project material cost');
+    assertTrue($journal->lines[1]->accountCode === '1301' && ! $journal->lines[1]->credit->isZero(), 'credits inventory');
 });
 
 // --- e-Faktur (Pass 3, leg C) ------------------------------------------------
