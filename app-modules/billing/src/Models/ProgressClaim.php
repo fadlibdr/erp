@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Platform\Models\Company;
+use Modules\Projects\Models\Project;
 
 /**
  * @property string $id
@@ -48,5 +49,11 @@ final class ProgressClaim extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    /** @return BelongsTo<Project, $this> */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 }

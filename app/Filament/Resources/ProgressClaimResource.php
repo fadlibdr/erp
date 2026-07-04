@@ -13,6 +13,8 @@ use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\HtmlString;
 use Modules\Billing\Actions\IssueTerminInvoice;
 use Modules\Billing\Models\ProgressClaim;
 use Throwable;
@@ -56,6 +58,13 @@ final class ProgressClaimResource extends Resource
                 TextColumn::make('status')->badge()->colors([
                     'gray' => 'draft', 'warning' => 'bapp', 'success' => 'invoiced',
                 ]),
+                // GARIS stamp: "Disetujui" once the termin is issued (final state).
+                TextColumn::make('segel')->label('Segel')
+                    ->state(fn ($record): ?string => $record->status === 'invoiced' ? 'setuju' : null)
+                    ->formatStateUsing(fn (?string $state): HtmlString|string => $state
+                        ? new HtmlString(Blade::render('<x-garis.stamp status="setuju" size="sm" />'))
+                        : '—')
+                    ->html(),
             ])
             ->actions([
                 Action::make('issue')

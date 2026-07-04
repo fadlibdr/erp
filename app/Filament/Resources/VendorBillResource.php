@@ -8,15 +8,21 @@ use App\Filament\Resources\VendorBillResource\Pages;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\ViewEntry;
+use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\HtmlString;
 use Modules\Payables\Actions\ApproveMaterialBill;
 use Modules\Payables\Actions\ApproveSubcontractorBill;
 use Modules\Payables\Models\VendorBill;
 use Modules\Procurement\Models\PurchaseOrder;
+use Modules\Projects\Models\Project;
 use Throwable;
 
 /**
@@ -39,7 +45,11 @@ final class VendorBillResource extends Resource
     {
         return $form->schema([
             Select::make('vendor_id')->label('Vendor')->relationship('vendor', 'name')->searchable()->required(),
-            Select::make('project_id')->label('Proyek')->relationship('project', 'name')->searchable(),
+            // Payables must not depend on Projects (dependency law), so the project
+            // options come from an app-layer query rather than a model relation.
+            Select::make('project_id')->label('Proyek')
+                ->options(fn (): array => Project::query()->pluck('name', 'id')->all())
+                ->searchable(),
             Select::make('purchase_order_id')->label('PO (untuk tagihan material)')
                 ->options(fn (): array => PurchaseOrder::query()->pluck('number', 'id')->all())
                 ->searchable()
@@ -72,9 +82,17 @@ final class VendorBillResource extends Resource
                 TextColumn::make('match_status')->label('3-Way Match')->badge()->placeholder('—')->colors([
                     'success' => 'matched', 'danger' => ['qty_variance', 'price_variance', 'qty_and_price_variance'],
                 ]),
-                TextColumn::make('status')->badge()->colors(['gray' => 'draft', 'success' => 'approved']),
+                TextColumn::make('status')->badge()->colors(['gray' => 'draft', 'success' => 'approved', 'info' => 'paid']),
+                // GARIS stamp: a wet-cap "Lunas" only for the final (paid) state.
+                TextColumn::make('segel')->label('Segel')
+                    ->state(fn (VendorBill $record): ?string => $record->status === 'paid' ? 'lunas' : null)
+                    ->formatStateUsing(fn (?string $state): HtmlString|string => $state
+                        ? new HtmlString(Blade::render('<x-garis.stamp status="lunas" size="sm" />'))
+                        : '—')
+                    ->html(),
             ])
             ->actions([
+                ViewAction::make(),
                 Action::make('approve')
                     ->label('Setujui')
                     ->icon('heroicon-o-check-badge')
@@ -98,11 +116,20 @@ final class VendorBillResource extends Resource
             ->defaultSort('created_at', 'desc');
     }
 
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        // Render the bill as a GARIS etiket (title-block) with its real figures.
+        return $infolist->schema([
+            ViewEntry::make('etiket')->view('filament.infolists.vendor-bill-etiket'),
+        ]);
+    }
+
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListVendorBills::route('/'),
             'create' => Pages\CreateVendorBill::route('/create'),
+            'view' => Pages\ViewVendorBill::route('/{record}'),
             'edit' => Pages\EditVendorBill::route('/{record}/edit'),
         ];
     }

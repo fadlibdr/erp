@@ -139,3 +139,4 @@
 .garis-legend i { display:inline-block; width:18px; height:0; border-top:2.5px solid var(--garis-biru-600); vertical-align:middle; margin-right:6px; }
 .garis-legend i.dash { border-top-style:dashed; border-color:var(--garis-ink-3); }
 .garis-legend i.dev { border-color:var(--garis-amber-500); }
+.garis-stamp-sm { font-size:10px; padding:2px 8px; letter-spacing:.1em; }

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Modules\Platform\Models\Company;
+use Modules\Procurement\Models\Vendor;
 
 /**
  * A vendor / subcontractor bill — the payables mirror of a ProgressClaim. Created
@@ -71,5 +72,11 @@ final class VendorBill extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    /** @return BelongsTo<Vendor, $this> */
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class);
     }
 }
