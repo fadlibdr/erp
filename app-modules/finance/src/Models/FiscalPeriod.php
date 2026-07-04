@@ -39,4 +39,10 @@ final class FiscalPeriod extends Model
     {
         return $this->status === 'closed';
     }
+
+    // Tenant ownership: Filament scopes this resource to the current company.
+    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\Modules\Platform\Models\Company::class);
+    }
 }

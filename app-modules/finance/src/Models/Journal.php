@@ -43,4 +43,10 @@ final class Journal extends Model
     {
         return $this->hasMany(JournalLine::class);
     }
+
+    // Tenant ownership: Filament scopes the GL viewer to the current company.
+    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\Modules\Platform\Models\Company::class);
+    }
 }

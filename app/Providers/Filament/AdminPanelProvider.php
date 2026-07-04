@@ -12,6 +12,7 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Modules\Platform\Models\Company;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -36,6 +37,10 @@ final class AdminPanelProvider extends PanelProvider
             ->login()
             ->colors(['primary' => Color::Amber])
             ->brandName('KARYA')
+            // Multi-company tenancy (the KSO substrate): every tenant-aware resource
+            // is scoped to the chosen company via each record's company() relation,
+            // and company_id is auto-filled on create — closing the create-form gap.
+            ->tenant(Company::class, slugAttribute: 'code')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([Dashboard::class])

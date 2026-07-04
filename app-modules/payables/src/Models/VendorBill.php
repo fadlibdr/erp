@@ -55,4 +55,10 @@ final class VendorBill extends Model
         'net_payable_minor' => 'integer',
         'pph_rate_numerator' => 'integer',
     ];
+
+    // Tenant ownership: Filament scopes this resource to the current company.
+    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\Modules\Platform\Models\Company::class);
+    }
 }
