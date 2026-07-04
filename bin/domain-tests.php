@@ -31,17 +31,28 @@ spl_autoload_register(static function (string $class): void {
 
 use Modules\Billing\Domain\ProgressInvoiceFact;
 use Modules\Billing\Domain\TerminCalculator;
+use Modules\Finance\Domain\BudgetControlPolicy;
+use Modules\Finance\Domain\BudgetVerdict;
 use Modules\Finance\Domain\Ledger\AccountMap;
+use Modules\Finance\Domain\Ledger\GrnPostingRule;
 use Modules\Finance\Domain\Ledger\JournalDraft;
 use Modules\Finance\Domain\Ledger\JournalLineDraft;
 use Modules\Finance\Domain\Ledger\LedgerException;
 use Modules\Finance\Domain\Ledger\ProgressInvoicePostingRule;
+use Modules\Finance\Domain\Ledger\Psak72PostingRule;
 use Modules\Finance\Domain\Ledger\VendorBillPostingRule;
 use Modules\Finance\Domain\Psak72Calculator;
+use Modules\Inventory\Domain\MovingAverageValuation;
+use Modules\Inventory\Domain\StockBalance;
 use Modules\Payables\Domain\SubcontractBillCalculator;
 use Modules\Payables\Domain\VendorBillFact;
 use Modules\Platform\Domain\Currency;
 use Modules\Platform\Domain\Money;
+use Modules\Procurement\Domain\MatchVerdict;
+use Modules\Procurement\Domain\ThreeWayMatch;
+use Modules\Tax\Domain\EfakturInvoice;
+use Modules\Tax\Domain\EfakturSubmissionStatus;
+use Modules\Tax\Domain\EfakturXmlBuilder;
 use Modules\Tax\Domain\PphFinalRateResolver;
 use Modules\Tax\Domain\PphFinalRateTable;
 use Modules\Tax\Domain\PpnCalculator;
@@ -321,6 +332,155 @@ test('contract liability when billing runs ahead of recognition', function () us
     $r = $calc->recognize(Money::of(10_000_000_000, $IDR), 250_000, Money::zero($IDR), Money::of(3_000_000_000, $IDR));
     assertSameInt(0, $r->contractAsset->minor, 'no asset');
     assertSameInt(500_000_000, $r->contractLiability->minor, 'advance-billing liability');
+});
+
+test('PSAK 72 close true-up posts a balanced asset (under-billed) and liability (over-billed) entry', function () use ($IDR) {
+    $accounts = new AccountMap([
+        'contract_asset' => '1171',
+        'contract_liability' => '2181',
+        'contract_revenue' => '4101',
+    ]);
+    $rule = new Psak72PostingRule;
+
+    // Under-billed: recognised Rp 500.000 more than billed this period → asset.
+    $asset = $rule->toJournal(['project_id' => 'PRJ-1', 'currency' => $IDR->value, 'true_up' => 500_000], $accounts);
+    $d = 0;
+    $c = 0;
+    foreach ($asset->lines as $l) {
+        $d += $l->debit->minor;
+        $c += $l->credit->minor;
+    }
+    assertSameInt($c, $d, 'asset entry balances');
+    assertSameInt(500_000, $d, 'asset movement');
+    assertTrue($asset->lines[0]->accountCode === '1171' && ! $asset->lines[0]->debit->isZero(), 'debits the contract asset');
+
+    // Over-billed: billed Rp 300.000 more than recognised → liability, revenue debited.
+    $liab = $rule->toJournal(['project_id' => 'PRJ-1', 'currency' => $IDR->value, 'true_up' => -300_000], $accounts);
+    $d = 0;
+    $c = 0;
+    foreach ($liab->lines as $l) {
+        $d += $l->debit->minor;
+        $c += $l->credit->minor;
+    }
+    assertSameInt($c, $d, 'liability entry balances');
+    assertSameInt(300_000, $d, 'liability movement');
+    assertTrue($liab->lines[1]->accountCode === '2181' && ! $liab->lines[1]->credit->isZero(), 'credits the contract liability');
+});
+
+// --- Cost-control commitment loop (Pass 3, leg A) ----------------------------
+fwrite(STDOUT, "\nCost control (budget / GRN / stock / 3-way match)\n");
+
+test('budget policy: OK, WARN at the soft threshold, BLOCK past the ceiling', function () {
+    $policy = new BudgetControlPolicy;
+    // Budget 1.000.000; committed 500.000, actual 200.000 (consumed 700.000).
+    $ok = $policy->decide(1_000_000, 500_000, 200_000, 100_000);     // projected 800k (<90%)
+    $warn = $policy->decide(1_000_000, 500_000, 200_000, 200_000);   // projected 900k (=90%)
+    $block = $policy->decide(1_000_000, 500_000, 200_000, 400_000);  // projected 1.1M (>100%)
+
+    assertTrue($ok->verdict === BudgetVerdict::Ok, 'within threshold is OK');
+    assertSameInt(300_000, $ok->availableMinor, 'available = budget − committed − actual');
+    assertTrue($warn->verdict === BudgetVerdict::Warn, 'at 90% is WARN');
+    assertTrue($block->verdict === BudgetVerdict::Block, 'over ceiling is BLOCK');
+    assertSameInt(100_000, $block->overspendMinor, 'overspend amount');
+});
+
+test('GRN posting rule books a balanced Inventory/WIP ↔ GR/IR accrual', function () use ($IDR) {
+    $accounts = new AccountMap([
+        'inventory_wip' => '1141',
+        'gr_ir_accrual' => '2109',
+    ]);
+    $payload = [
+        'grn_id' => 'GRN-001',
+        'project_id' => 'PRJ-001',
+        'wbs_id' => 'WBS-1',
+        'cost_code' => 'MAT',
+        'currency' => $IDR->value,
+        'amount' => 750_000,
+    ];
+    $journal = (new GrnPostingRule)->toJournal($payload, $accounts);
+
+    $debits = 0;
+    $credits = 0;
+    foreach ($journal->lines as $line) {
+        $debits += $line->debit->minor;
+        $credits += $line->credit->minor;
+    }
+    assertSameInt($credits, $debits, 'accrual journal balances');
+    assertSameInt(750_000, $debits, 'movement = goods received value');
+});
+
+test('moving-average: receipts blend, an issue leaves at the running average', function () use ($IDR) {
+    $mav = new MovingAverageValuation;
+    $bal = StockBalance::opening(Money::zero($IDR));
+    // Receive 100 units @ Rp 1.000 = 100.000, then 100 units @ Rp 3.000 = 300.000.
+    $bal = $mav->receive($bal, 100_000, Money::of(100_000, $IDR)); // qty in milli: 100.000 = 100 units
+    $bal = $mav->receive($bal, 100_000, Money::of(300_000, $IDR));
+    assertSameInt(200_000, $bal->qtyMilli, '200 units on hand');
+    assertSameInt(400_000, $bal->value->minor, 'pooled value 400.000');
+
+    // Issue 50 units → 50/200 of 400.000 = 100.000 at the Rp 2.000 average.
+    $issue = $mav->issue($bal, 50_000);
+    assertSameInt(100_000, $issue->issuedValue->minor, 'issued value at moving average');
+    assertSameInt(150_000, $issue->remaining->qtyMilli, '150 units remain');
+    assertSameInt(300_000, $issue->remaining->value->minor, 'remaining value');
+
+    // Issuing the rest takes exactly the remaining value — no rounding dust.
+    $rest = $mav->issue($issue->remaining, 150_000);
+    assertSameInt(300_000, $rest->issuedValue->minor, 'final issue drains the pool exactly');
+    assertSameInt(0, $rest->remaining->qtyMilli, 'empty');
+    assertSameInt(0, $rest->remaining->value->minor, 'zero value left');
+});
+
+test('three-way match: clean, quantity variance, price variance', function () {
+    $m = new ThreeWayMatch;
+    // Ordered 100 units for 1.000.000; received 100; billed 1.005.000 (0.5% < 1% tol).
+    assertTrue($m->match(100_000, 100_000, 1_000_000, 1_005_000) === MatchVerdict::Matched, 'within tolerance');
+    // Received only 90 units → quantity variance (default qty tolerance is zero).
+    assertTrue($m->match(100_000, 90_000, 1_000_000, 1_000_000) === MatchVerdict::QtyVariance, 'short delivery');
+    // Billed 1.100.000 (10% > 1% tol) → price variance.
+    assertTrue($m->match(100_000, 100_000, 1_000_000, 1_100_000) === MatchVerdict::PriceVariance, 'overbilled');
+});
+
+// --- e-Faktur (Pass 3, leg C) ------------------------------------------------
+fwrite(STDOUT, "\ne-Faktur (Coretax XML + submission status)\n");
+
+test('e-Faktur XML carries the parties, serial and self-checked DPP/PPN totals', function () {
+    $invoice = new EfakturInvoice(
+        sellerTaxNumber: '0012345678901000',
+        buyerTaxNumber: '0098765432101000',
+        buyerName: 'PT Karya & Mitra',                 // ampersand must be escaped
+        taxInvoiceNumber: '010.000-26.00000001',
+        taxInvoiceDate: '2026-07-04',
+        transactionCode: '04',
+        isReplacement: false,
+        referenceNumber: 'CLAIM-001',
+        lines: [
+            ['name' => 'Pekerjaan konstruksi termin 1', 'kind' => 'J', 'priceMinor' => 1_000_000, 'dppMinor' => 1_000_000, 'ppnMinor' => 110_000],
+        ],
+    );
+    $xml = (new EfakturXmlBuilder)->build($invoice);
+
+    assertTrue(str_contains($xml, '<SellerTaxNumber>0012345678901000</SellerTaxNumber>'), 'seller NPWP');
+    assertTrue(str_contains($xml, '<BuyerTaxNumber>0098765432101000</BuyerTaxNumber>'), 'buyer NPWP');
+    assertTrue(str_contains($xml, '<TaxInvoiceNumber>010.000-26.00000001</TaxInvoiceNumber>'), 'NSFP serial');
+    assertTrue(str_contains($xml, 'PT Karya &amp; Mitra'), 'XML-escaped buyer name');
+    assertTrue(str_contains($xml, '<SumDPP>1000000</SumDPP>'), 'DPP total');
+    assertTrue(str_contains($xml, '<SumPPN>110000</SumPPN>'), 'PPN total');
+    assertTrue(str_contains($xml, '<TaxInvoiceOpt>Normal</TaxInvoiceOpt>'), 'not a replacement');
+});
+
+test('e-Faktur status guard allows the happy path and refuses illegal jumps', function () {
+    assertTrue(EfakturSubmissionStatus::Queued->canTransitionTo(EfakturSubmissionStatus::Sent), 'queued → sent');
+    assertTrue(EfakturSubmissionStatus::Sent->canTransitionTo(EfakturSubmissionStatus::Acked), 'sent → acked');
+    assertTrue(EfakturSubmissionStatus::Failed->canTransitionTo(EfakturSubmissionStatus::Sent), 'failed retries');
+    assertTrue(EfakturSubmissionStatus::Acked->isTerminal(), 'acked is terminal');
+
+    assertThrows(RuntimeException::class, function () {
+        EfakturSubmissionStatus::Queued->transitionTo(EfakturSubmissionStatus::Acked);
+    }, 'cannot ack an unsent invoice');
+    assertThrows(RuntimeException::class, function () {
+        EfakturSubmissionStatus::Acked->transitionTo(EfakturSubmissionStatus::Failed);
+    }, 'cannot fail an acked invoice');
 });
 
 // --- summary -----------------------------------------------------------------

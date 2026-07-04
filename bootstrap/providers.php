@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Providers\AppServiceProvider;
+use App\Providers\Filament\AdminPanelProvider;
 use Modules\Billing\Providers\BillingServiceProvider;
 use Modules\Finance\Providers\FinanceServiceProvider;
 use Modules\Inventory\Providers\InventoryServiceProvider;
@@ -16,6 +17,7 @@ use Modules\Tax\Providers\TaxServiceProvider;
 
 return [
     AppServiceProvider::class,
+    AdminPanelProvider::class,
 
     // Module service providers. internachi/modular can auto-discover these from
     // each module's composer.json when the composer-merge-plugin is active; they

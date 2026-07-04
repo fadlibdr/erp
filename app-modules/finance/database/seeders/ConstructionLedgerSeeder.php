@@ -30,6 +30,10 @@ final class ConstructionLedgerSeeder
         '1152' => ['PPN Masukan', AccountType::Asset],
         '2104' => ['Utang Retensi', AccountType::Liability],
         '2131' => ['Utang PPh Final Konstruksi', AccountType::Liability],
+        // Pass 3: commitment loop (GR/IR) and PSAK 72 month-end recognition.
+        '2109' => ['Akrual Penerimaan Barang (GR/IR)', AccountType::Liability],
+        '1171' => ['Aset Kontrak (Pendapatan Belum Ditagih)', AccountType::Asset],
+        '2181' => ['Liabilitas Kontrak (Tagihan Diterima Dimuka)', AccountType::Liability],
     ];
 
     /** posting role => account code, for the progress-invoice fact */
@@ -51,6 +55,19 @@ final class ConstructionLedgerSeeder
         'pph_final_payable' => '2131',
     ];
 
+    /** posting role => account code, for the goods-received fact (GR/IR accrual) */
+    private const GRN_ROLES = [
+        'inventory_wip' => '1301',
+        'gr_ir_accrual' => '2109',
+    ];
+
+    /** posting role => account code, for the PSAK 72 month-end recognition true-up */
+    private const REVENUE_RECOGNITION_ROLES = [
+        'contract_asset' => '1171',
+        'contract_liability' => '2181',
+        'contract_revenue' => '4101',
+    ];
+
     public function seedForCompany(string $companyId): void
     {
         foreach (self::ACCOUNTS as $code => [$name, $type]) {
@@ -62,6 +79,8 @@ final class ConstructionLedgerSeeder
 
         $this->seedRoles($companyId, 'billing.progress_invoice_issued', self::PROGRESS_INVOICE_ROLES);
         $this->seedRoles($companyId, 'payables.vendor_bill_approved', self::VENDOR_BILL_ROLES);
+        $this->seedRoles($companyId, 'procurement.goods_received', self::GRN_ROLES);
+        $this->seedRoles($companyId, 'finance.revenue_recognized', self::REVENUE_RECOGNITION_ROLES);
     }
 
     /**

@@ -7,24 +7,39 @@ namespace Modules\Finance\Services;
 use Illuminate\Support\Facades\DB;
 use Modules\Platform\Models\OutboxEvent;
 use Modules\Platform\Support\Outbox;
+use Modules\Platform\Support\OutboxConsumer;
 use Throwable;
 
 /**
- * Drains the outbox into the posting engine.
+ * Drains the outbox into the posting engine and any registered projections.
  *
- * For each unprocessed event whose fact type the engine handles, it posts the
- * journal and stamps the event processed — the whole thing in one transaction so
- * a failure leaves the event unprocessed for a later retry rather than posting a
- * journal it can't acknowledge. Events the engine doesn't handle (non-financial
- * facts) are marked processed and skipped. Run continuously by a queue worker
- * (Horizon) or on a scheduler tick.
+ * For each unprocessed event the relay, in one transaction: posts a journal if the
+ * engine handles the fact, runs every OutboxConsumer that handles it (the
+ * commitment projector, the stock ledger, …), then stamps the event processed. The
+ * single transaction is the point — a projection, its journal, and the processed
+ * mark commit together or not at all, so a failure leaves the event for a clean
+ * retry rather than half-applying it. Events nobody handles (non-financial facts)
+ * are simply marked processed. Run by a queue worker (Horizon) or a scheduler tick.
+ *
+ * Consumers are injected as the Platform interface (resolved from the container tag
+ * `outbox.consumers`), so the relay never statically depends on the modules that
+ * own them — the dependency arrow stays pointing at Finance, never away from it.
  */
 final class OutboxRelay
 {
+    /** @var list<OutboxConsumer> */
+    private readonly array $consumers;
+
+    /**
+     * @param  iterable<OutboxConsumer>  $consumers
+     */
     public function __construct(
         private readonly Outbox $outbox,
         private readonly PostingRuleEngine $engine,
-    ) {}
+        iterable $consumers = [],
+    ) {
+        $this->consumers = is_array($consumers) ? array_values($consumers) : iterator_to_array($consumers, false);
+    }
 
     /** @return int number of events processed */
     public function drain(int $batch = 100): int
@@ -42,6 +57,11 @@ final class OutboxRelay
                             payload: $event->payload,
                             date: now()->format('Y-m-d'),
                         );
+                    }
+                    foreach ($this->consumers as $consumer) {
+                        if ($consumer->handles($event->type)) {
+                            $consumer->consume($event);
+                        }
                     }
                     $this->markProcessed($event);
                 });

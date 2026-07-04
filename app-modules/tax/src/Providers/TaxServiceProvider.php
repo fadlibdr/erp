@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Tax\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Modules\Tax\Actions\QueueEfaktur;
 use Modules\Tax\Domain\PphFinalRateResolver;
 use Modules\Tax\Services\PphFinalRateRepository;
 
@@ -14,6 +15,10 @@ final class TaxServiceProvider extends ServiceProvider
     {
         $this->app->singleton(PphFinalRateRepository::class);
         $this->app->bind(PphFinalRateResolver::class, fn ($app) => $app->make(PphFinalRateRepository::class)->resolver());
+
+        // Queue an e-Faktur when a termin invoice is issued (consumes the billing
+        // fact via the outbox; Tax stays Platform-only).
+        $this->app->tag(QueueEfaktur::class, 'outbox.consumers');
     }
 
     public function boot(): void

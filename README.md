@@ -4,7 +4,7 @@ A Laravel 11 **modular monolith** for Engineering–Procurement–Construction c
 
 This repository is **Pass 1**: the architectural spine plus the two highest-risk pieces (the double-entry ledger and the construction-tax engine) built to depth with tests, and one end-to-end "money path" vertical slice. See `docs`-equivalent strategy in the accompanying blueprint. What is deferred is listed at the bottom.
 
-> **Provenance note.** The domain layer was authored and its invariants verified with the PHP CLI (`php bin/domain-tests.php`, 16/16 green). As of Pass 2 the full stack is validated too: `composer check` (Pint + PHPStan L8 + deptrac + Pest, 13 tests) runs green against a real PostgreSQL database. Pass 2 also fixed three latent wiring defects Pass 1 shipped unvalidated — see *Pass 2* below.
+> **Provenance note.** The domain layer was authored and its invariants verified with the PHP CLI (`php bin/domain-tests.php`, **23/23 green** as of Pass 3). As of Pass 2 the full stack is validated too: `composer check` (Pint + PHPStan L8 + deptrac + Pest) runs green against a real PostgreSQL database; Pass 3 adds four feature tests (commitment loop, GR/IR accrual, month-end close, e-Faktur) the team runs there. Pass 2 also fixed three latent wiring defects Pass 1 shipped unvalidated — see *Pass 2* below.
 
 ## Architecture in one screen
 
@@ -30,7 +30,7 @@ app-modules/
 php bin/domain-tests.php
 ```
 
-Runs the pure-domain suite with just the PHP CLI: Money allocation/rounding, the **PPh-final resolver incl. the pre-2022 transitional rule**, the **double-entry balance invariant**, the **termin money path** and its payables mirror the **subcontractor-bill money path** (each posting a balanced journal), and **PSAK 72** cost-to-cost recognition. Expected: `16 passed, 0 failed`.
+Runs the pure-domain suite with just the PHP CLI: Money allocation/rounding, the **PPh-final resolver incl. the pre-2022 transitional rule**, the **double-entry balance invariant**, the **termin money path** and its payables mirror the **subcontractor-bill money path** (each posting a balanced journal), and **PSAK 72** cost-to-cost recognition — plus the Pass 3 legs: **budget control** (OK/WARN/BLOCK), the **GR/IR accrual** balance, **moving-average** valuation, **three-way match**, the **PSAK 72 month-end true-up**, and the **e-Faktur** XML + submission-status guard. Expected: `23 passed, 0 failed`.
 
 ## Full stack setup
 
@@ -88,7 +88,20 @@ The server always runs at HQ/VPS, never at the project site; site capture is a s
 
 The whole codebase is now Pint-clean and PHPStan-L8-clean (Pass 1 shipped with 41 static-analysis findings; all resolved).
 
-**Deferred to Pass 3+:** Filament resources/screens for every module · full Procurement/Inventory/AR/Reporting logic + AP 3-way match & payment batches · e-Faktur XML builder + Coretax/PJAP channel · native payroll, tender, equipment, subcontract, doc-control, HSE · the offline PWA · the `epcctl` upgrade CLI.
+## What Pass 3 adds
+
+**Four legs, all over schema Passes 1–2 already laid — the behaviour layer that was missing.**
+
+- **Cost-control commitment loop** (the "C" of EPC, killer workflow #1) — a PO is gated against the project control budget (`BudgetControlPolicy`: available = budget − open commitments − actuals), and on approval raises a commitment through the outbox to Finance's `CommitmentProjector`. Receiving goods (`ReceiveGoods`) consumes that commitment, books a **balanced GR/IR accrual** (`GrnPostingRule`: Dr Inventory/WIP · Cr GR/IR), and moves stock at **moving-average** cost (`MovingAverageValuation` → the append-only stock ledger). `ThreeWayMatch` (PO ↔ GRN ↔ bill) is built and tested.
+- **Month-end close** (the highest-risk workflow) — `CloseFiscalPeriod` recognises **PSAK 72** revenue across active projects (cost-to-date from the GL; commercials supplied by the caller, keeping Finance below Projects/Billing in the dependency law), posts the period true-up (`Psak72PostingRule`: contract asset / contract liability) **through the engine while the period is still open**, records an auditable `fin_revrec_runs` row, then **hard-locks** the period — after which `FiscalPeriodGuard` refuses any late post. `ReopenFiscalPeriod` lifts the lock for a controlled correction.
+- **e-Faktur** — `EfakturXmlBuilder` (pure, self-checking DPP/PPN totals) produces the Coretax tax-invoice document; `QueueEfaktur` enqueues one the moment a termin is issued (idempotent on the claim); `EfakturSubmissionStatus` guards the Queued→Sent→Acked lifecycle; `CoretaxChannel` transmits it (team-verified against a sandbox).
+- **Filament UI spine** — the first replaceable UI, in the **app layer** (`app/Filament`), never inside a module, so "domain is Filament-free" holds without exception. Resources for Project, Purchase Order (+ *Approve*, budget-gated), Vendor Bill (+ *Approve*), Progress Claim (+ *Issue Termin*), a read-only Journal viewer, Fiscal Period (+ *Close*), and a budget-vs-committed-vs-actual dashboard widget. Every screen calls an Action — no business logic in the UI.
+
+**The seam held symmetrically again.** The outbox relay now fans one fact out to a *set* of consumers (`Platform\Support\OutboxConsumer`) — the posting engine plus projections (commitment ledger, stock ledger, e-Faktur queue) — all inside its one per-event transaction, and the `domain → {Finance, Tax} → Platform` law stayed green (Finance never imports a domain module; each consumer names its upstream fact type as a local string).
+
+**Verified in-session:** `php bin/domain-tests.php` → **23 passed** (up from 16): budget OK/WARN/BLOCK, GR/IR balance, moving-average blend + drain, three-way match, PSAK 72 true-up (asset & liability), e-Faktur XML bytes + status guard. **Team-verified after `composer install`:** feature tests `PurchaseOrderCommitmentPathTest`, `GoodsReceiptAccrualPathTest`, `MonthEndCloseTest`, `EfakturSubmissionTest`, plus `composer check` (Pint + PHPStan L8 + deptrac + Pest) and a Filament smoke.
+
+**Deferred to Pass 4+:** wiring the vendor-bill posting to *clear* GR/IR when a bill references a PO (the `ThreeWayMatch` domain is ready; the GL clearing variant is not yet wired) · Filament multi-company/tenant scoping (the panel is a single-company spine) · payment batches · a BOQ-management resource (same CRUD pattern) · e-Faktur NPWP enrichment/resolver · native payroll, tender, equipment, doc-control, HSE · the offline PWA · the `epcctl` upgrade CLI.
 
 ## License
 
