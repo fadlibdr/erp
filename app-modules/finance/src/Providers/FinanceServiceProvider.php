@@ -6,6 +6,7 @@ namespace Modules\Finance\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Modules\Finance\Domain\Ledger\GrnPostingRule;
+use Modules\Finance\Domain\Ledger\MaterialBillPostingRule;
 use Modules\Finance\Domain\Ledger\ProgressInvoicePostingRule;
 use Modules\Finance\Domain\Ledger\Psak72PostingRule;
 use Modules\Finance\Domain\Ledger\VendorBillPostingRule;
@@ -29,6 +30,7 @@ final class FinanceServiceProvider extends ServiceProvider
             $engine->register(new VendorBillPostingRule);
             $engine->register(new GrnPostingRule);          // Pass 3: GR/IR accrual
             $engine->register(new Psak72PostingRule);       // Pass 3: month-end recognition
+            $engine->register(new MaterialBillPostingRule); // Pass 4: clears GR/IR on the bill
 
             return $engine;
         });

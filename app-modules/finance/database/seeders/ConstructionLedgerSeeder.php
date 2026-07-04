@@ -68,6 +68,14 @@ final class ConstructionLedgerSeeder
         'contract_revenue' => '4101',
     ];
 
+    /** posting role => account code, for the PO-linked material bill (clears GR/IR) */
+    private const MATERIAL_BILL_ROLES = [
+        'gr_ir_accrual' => '2109',
+        'ppn_input' => '1152',
+        'accounts_payable' => '2101',
+        'retention_payable' => '2104',
+    ];
+
     public function seedForCompany(string $companyId): void
     {
         foreach (self::ACCOUNTS as $code => [$name, $type]) {
@@ -81,6 +89,7 @@ final class ConstructionLedgerSeeder
         $this->seedRoles($companyId, 'payables.vendor_bill_approved', self::VENDOR_BILL_ROLES);
         $this->seedRoles($companyId, 'procurement.goods_received', self::GRN_ROLES);
         $this->seedRoles($companyId, 'finance.revenue_recognized', self::REVENUE_RECOGNITION_ROLES);
+        $this->seedRoles($companyId, 'payables.material_bill_approved', self::MATERIAL_BILL_ROLES);
     }
 
     /**

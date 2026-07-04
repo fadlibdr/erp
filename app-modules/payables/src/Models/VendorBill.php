@@ -37,7 +37,7 @@ final class VendorBill extends Model
     protected $table = 'ap_bills';
 
     protected $fillable = [
-        'company_id', 'vendor_id', 'project_id', 'purchase_order_id', 'number', 'bill_date', 'status',
+        'company_id', 'vendor_id', 'project_id', 'purchase_order_id', 'number', 'bill_date', 'status', 'match_status',
         'work_value_minor', 'ppn_input_minor', 'service_class', 'contract_date', 'retention_percent', 'cost_code', 'wbs_id',
         'gross_minor', 'pph_withheld_minor', 'retention_minor', 'net_payable_minor',
         'pph_rate_numerator', 'pph_regulation_ref', 'currency',

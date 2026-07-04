@@ -13,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Modules\Payables\Actions\ApproveMaterialBill;
 use Modules\Payables\Actions\ApproveSubcontractorBill;
 use Modules\Payables\Models\VendorBill;
 use Throwable;
@@ -38,6 +39,10 @@ final class VendorBillResource extends Resource
         return $form->schema([
             Select::make('vendor_id')->label('Vendor')->relationship('vendor', 'name')->searchable()->required(),
             Select::make('project_id')->label('Proyek')->relationship('project', 'name')->searchable(),
+            Select::make('purchase_order_id')->label('PO (untuk tagihan material)')
+                ->options(fn (): array => \Modules\Procurement\Models\PurchaseOrder::query()->pluck('number', 'id')->all())
+                ->searchable()
+                ->helperText('Isi untuk tagihan material — memicu three-way match & pelunasan GR/IR. Kosongkan untuk tagihan subkontraktor.'),
             TextInput::make('bill_date')->label('Tanggal Tagihan')->type('date')->required(),
             TextInput::make('contract_date')->label('Tanggal Kontrak Sub')->type('date')
                 ->helperText('Menentukan rezim PPh final subkontrak.'),
@@ -63,6 +68,9 @@ final class VendorBillResource extends Resource
                 TextColumn::make('work_value_minor')->label('Nilai')->money('IDR'),
                 TextColumn::make('pph_withheld_minor')->label('PPh Dipotong')->money('IDR')->placeholder('—'),
                 TextColumn::make('net_payable_minor')->label('Neto Dibayar')->money('IDR')->placeholder('—'),
+                TextColumn::make('match_status')->label('3-Way Match')->badge()->placeholder('—')->colors([
+                    'success' => 'matched', 'danger' => ['qty_variance', 'price_variance', 'qty_and_price_variance'],
+                ]),
                 TextColumn::make('status')->badge()->colors(['gray' => 'draft', 'success' => 'approved']),
             ])
             ->actions([
@@ -74,8 +82,13 @@ final class VendorBillResource extends Resource
                     ->visible(fn (VendorBill $record): bool => $record->status !== 'approved')
                     ->action(function (VendorBill $record): void {
                         try {
-                            app(ApproveSubcontractorBill::class)->execute($record);
-                            Notification::make()->title('Tagihan disetujui; akrual diposting via outbox.')->success()->send();
+                            // Route by whether the bill is tied to a PO: a material bill
+                            // clears GR/IR under three-way match; a service bill withholds
+                            // PPh via the subcontract path.
+                            $record->purchase_order_id !== null
+                                ? app(ApproveMaterialBill::class)->execute($record)
+                                : app(ApproveSubcontractorBill::class)->execute($record);
+                            Notification::make()->title('Tagihan disetujui; jurnal diposting via outbox.')->success()->send();
                         } catch (Throwable $e) {
                             Notification::make()->title('Gagal menyetujui tagihan')->body($e->getMessage())->danger()->send();
                         }

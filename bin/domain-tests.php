@@ -38,12 +38,14 @@ use Modules\Finance\Domain\Ledger\GrnPostingRule;
 use Modules\Finance\Domain\Ledger\JournalDraft;
 use Modules\Finance\Domain\Ledger\JournalLineDraft;
 use Modules\Finance\Domain\Ledger\LedgerException;
+use Modules\Finance\Domain\Ledger\MaterialBillPostingRule;
 use Modules\Finance\Domain\Ledger\ProgressInvoicePostingRule;
 use Modules\Finance\Domain\Ledger\Psak72PostingRule;
 use Modules\Finance\Domain\Ledger\VendorBillPostingRule;
 use Modules\Finance\Domain\Psak72Calculator;
 use Modules\Inventory\Domain\MovingAverageValuation;
 use Modules\Inventory\Domain\StockBalance;
+use Modules\Payables\Domain\MaterialBillCalculator;
 use Modules\Payables\Domain\SubcontractBillCalculator;
 use Modules\Payables\Domain\VendorBillFact;
 use Modules\Platform\Domain\Currency;
@@ -439,6 +441,60 @@ test('three-way match: clean, quantity variance, price variance', function () {
     assertTrue($m->match(100_000, 90_000, 1_000_000, 1_000_000) === MatchVerdict::QtyVariance, 'short delivery');
     // Billed 1.100.000 (10% > 1% tol) → price variance.
     assertTrue($m->match(100_000, 100_000, 1_000_000, 1_100_000) === MatchVerdict::PriceVariance, 'overbilled');
+});
+
+// --- Material bill / GR-IR clearing (Pass 4 — commitment loop closed) ---------
+fwrite(STDOUT, "\nMaterial bill (GR/IR clearing)\n");
+
+test('material bill has no PPh withholding and clears via a balanced GR/IR entry', function () use ($IDR) {
+    // Rp 800.000 of goods, vendor is PKP → 11% PPN input, no retention, no PPh.
+    $calc = new MaterialBillCalculator(new PpnCalculator(11));
+    $b = $calc->calculate(Money::of(800_000, $IDR), 0, vendorIsPkp: true);
+
+    assertSameInt(800_000, $b->workValue->minor, 'work value');
+    assertSameInt(88_000, $b->ppnInput->minor, 'PPN input 11%');
+    assertSameInt(0, $b->retention->minor, 'no retention on goods');
+    assertSameInt(888_000, $b->netPayable->minor, 'net = work + PPN (no PPh)');
+
+    // The bill clears GR/IR rather than re-booking cost: Dr GR/IR + Dr PPN / Cr AP.
+    $accounts = new AccountMap([
+        'gr_ir_accrual' => '2109',
+        'ppn_input' => '1152',
+        'accounts_payable' => '2101',
+        'retention_payable' => '2104',
+    ]);
+    $payload = [
+        'bill_id' => 'MAT-BILL-001',
+        'project_id' => 'PRJ-001',
+        'currency' => $IDR->value,
+        'work_value' => $b->workValue->minor,
+        'ppn_input' => $b->ppnInput->minor,
+        'net_payable' => $b->netPayable->minor,
+        'retention' => $b->retention->minor,
+    ];
+    $journal = (new MaterialBillPostingRule)->toJournal($payload, $accounts);
+
+    $debits = 0;
+    $credits = 0;
+    foreach ($journal->lines as $line) {
+        $debits += $line->debit->minor;
+        $credits += $line->credit->minor;
+    }
+    assertSameInt($credits, $debits, 'material bill journal balances');
+    assertSameInt(888_000, $debits, 'movement = work + PPN');
+
+    // The debit that clears the accrual must hit GR/IR (2109), not a fresh cost account.
+    $grIr = null;
+    foreach ($journal->lines as $line) {
+        if ($line->accountCode === '2109') {
+            $grIr = $line;
+        }
+    }
+    assertTrue($grIr !== null && $grIr->debit->minor === 800_000, 'GR/IR debited by the goods value');
+    // No retention line when retention is zero.
+    foreach ($journal->lines as $line) {
+        assertTrue($line->accountCode !== '2104', 'no zero retention line');
+    }
 });
 
 // --- e-Faktur (Pass 3, leg C) ------------------------------------------------

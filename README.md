@@ -4,7 +4,7 @@ A Laravel 11 **modular monolith** for Engineering–Procurement–Construction c
 
 This repository is **Pass 1**: the architectural spine plus the two highest-risk pieces (the double-entry ledger and the construction-tax engine) built to depth with tests, and one end-to-end "money path" vertical slice. See `docs`-equivalent strategy in the accompanying blueprint. What is deferred is listed at the bottom.
 
-> **Provenance note.** The domain layer was authored and its invariants verified with the PHP CLI (`php bin/domain-tests.php`, **23/23 green** as of Pass 3). As of Pass 2 the full stack is validated too: `composer check` (Pint + PHPStan L8 + deptrac + Pest) runs green against a real PostgreSQL database; Pass 3 adds four feature tests (commitment loop, GR/IR accrual, month-end close, e-Faktur) the team runs there. Pass 2 also fixed three latent wiring defects Pass 1 shipped unvalidated — see *Pass 2* below.
+> **Provenance note.** The domain layer was authored and its invariants verified with the PHP CLI (`php bin/domain-tests.php`, **24/24 green** as of Pass 4). As of Pass 2 the full stack is validated too: `composer check` (Pint + PHPStan L8 + deptrac + Pest) runs green against a real PostgreSQL database; Pass 3 adds four feature tests (commitment loop, GR/IR accrual, month-end close, e-Faktur) the team runs there. Pass 2 also fixed three latent wiring defects Pass 1 shipped unvalidated — see *Pass 2* below.
 
 ## Architecture in one screen
 
@@ -30,7 +30,7 @@ app-modules/
 php bin/domain-tests.php
 ```
 
-Runs the pure-domain suite with just the PHP CLI: Money allocation/rounding, the **PPh-final resolver incl. the pre-2022 transitional rule**, the **double-entry balance invariant**, the **termin money path** and its payables mirror the **subcontractor-bill money path** (each posting a balanced journal), and **PSAK 72** cost-to-cost recognition — plus the Pass 3 legs: **budget control** (OK/WARN/BLOCK), the **GR/IR accrual** balance, **moving-average** valuation, **three-way match**, the **PSAK 72 month-end true-up**, and the **e-Faktur** XML + submission-status guard. Expected: `23 passed, 0 failed`.
+Runs the pure-domain suite with just the PHP CLI: Money allocation/rounding, the **PPh-final resolver incl. the pre-2022 transitional rule**, the **double-entry balance invariant**, the **termin money path** and its payables mirror the **subcontractor-bill money path** (each posting a balanced journal), and **PSAK 72** cost-to-cost recognition — plus the Pass 3 legs: **budget control** (OK/WARN/BLOCK), the **GR/IR accrual** balance, **moving-average** valuation, **three-way match**, the **PSAK 72 month-end true-up**, the **e-Faktur** XML + submission-status guard, and the **material bill** that clears GR/IR. Expected: `24 passed, 0 failed`.
 
 ## Full stack setup
 
@@ -101,7 +101,13 @@ The whole codebase is now Pint-clean and PHPStan-L8-clean (Pass 1 shipped with 4
 
 **Verified in-session:** `php bin/domain-tests.php` → **23 passed** (up from 16): budget OK/WARN/BLOCK, GR/IR balance, moving-average blend + drain, three-way match, PSAK 72 true-up (asset & liability), e-Faktur XML bytes + status guard. **Team-verified after `composer install`:** feature tests `PurchaseOrderCommitmentPathTest`, `GoodsReceiptAccrualPathTest`, `MonthEndCloseTest`, `EfakturSubmissionTest`, plus `composer check` (Pint + PHPStan L8 + deptrac + Pest) and a Filament smoke.
 
-**Deferred to Pass 4+:** wiring the vendor-bill posting to *clear* GR/IR when a bill references a PO (the `ThreeWayMatch` domain is ready; the GL clearing variant is not yet wired) · Filament multi-company/tenant scoping (the panel is a single-company spine) · payment batches · a BOQ-management resource (same CRUD pattern) · e-Faktur NPWP enrichment/resolver · native payroll, tender, equipment, doc-control, HSE · the offline PWA · the `epcctl` upgrade CLI.
+## What Pass 4 adds
+
+**The commitment loop, closed.** Pass 3 booked a GR/IR accrual (Dr Inventory · Cr GR/IR) when goods arrive; Pass 4 *clears* it when the vendor invoices. A PO-linked **material bill** (`ApproveMaterialBill`) is gated by **three-way match** (`ThreeWayMatch`: quantity received vs ordered, amount billed vs ordered) — a variance holds the bill, a clean match posts `MaterialBillPostingRule`: **Dr GR/IR (clears the accrual) · Dr PPN Input · Cr Accounts Payable · Cr Retention** — so the GR/IR account nets to zero once a received PO is fully billed, and the unbilled-receipts report is just its balance. Materials carry **no PPh-final** (not jasa konstruksi), so this is a parallel path to the Pass-2 subcontractor bill (which withholds PPh and debits cost), not a change to it; `ap_bills.purchase_order_id` already existed, so the only schema touch is a `match_status` audit column. The Filament vendor-bill *Approve* routes to the material path when a PO is linked, else the subcontract path.
+
+Verified in-session: `php bin/domain-tests.php` → **24 passed** (material-bill calc: no PPh, net = work + PPN − retention; GR/IR-clearing journal balances). Team-verified: `MaterialBillClearsGrIrTest` proves the loop closes end-to-end (GR/IR nets to zero) and that a mismatched bill is blocked.
+
+**Deferred to Pass 5+:** partial/over-receipt matching (Pass 4 assumes a full match) · material-issue → project-cost posting (Dr project cost · Cr inventory) · payment batches / settlement · Filament multi-company/tenant scoping (the panel is a single-company spine) · a BOQ-management resource (same CRUD pattern) · e-Faktur NPWP enrichment/resolver · native payroll, tender, equipment, doc-control, HSE · the offline PWA · the `epcctl` upgrade CLI.
 
 ## License
 
