@@ -15,8 +15,7 @@ final class PpnCalculator
 {
     public function __construct(
         private readonly int $ratePercent = 11,
-    ) {
-    }
+    ) {}
 
     public function on(Money $base): Money
     {

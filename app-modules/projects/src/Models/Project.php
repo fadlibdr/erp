@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Modules\Platform\Domain\Currency;
 use Modules\Platform\Domain\Money;
 
@@ -19,7 +20,7 @@ use Modules\Platform\Domain\Money;
  * @property int $retention_percent
  * @property int $uang_muka_percent
  * @property string $service_class
- * @property \Illuminate\Support\Carbon|null $contract_date
+ * @property Carbon|null $contract_date
  */
 final class Project extends Model
 {
@@ -49,13 +50,13 @@ final class Project extends Model
         return Money::ofMinor($this->contract_value_minor, Currency::from($this->currency));
     }
 
-    /** @return HasMany<Wbs> */
+    /** @return HasMany<Wbs, $this> */
     public function wbs(): HasMany
     {
         return $this->hasMany(Wbs::class);
     }
 
-    /** @return HasMany<BudgetLine> */
+    /** @return HasMany<BudgetLine, $this> */
     public function budgetLines(): HasMany
     {
         return $this->hasMany(BudgetLine::class);

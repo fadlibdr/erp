@@ -64,7 +64,7 @@ it('computes a termin that ties out to the rupiah', function () {
 });
 
 it('recognizes PSAK 72 revenue cost-to-cost with a contract asset', function () {
-    $calc = new Psak72Calculator();
+    $calc = new Psak72Calculator;
     $poc = $calc->pocRatioPpm(Money::of(2_000_000_000, Currency::IDR), Money::of(8_000_000_000, Currency::IDR));
     $r = $calc->recognize(Money::of(10_000_000_000, Currency::IDR), $poc, Money::zero(Currency::IDR), Money::of(2_000_000_000, Currency::IDR));
 

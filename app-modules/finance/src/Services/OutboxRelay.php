@@ -24,8 +24,7 @@ final class OutboxRelay
     public function __construct(
         private readonly Outbox $outbox,
         private readonly PostingRuleEngine $engine,
-    ) {
-    }
+    ) {}
 
     /** @return int number of events processed */
     public function drain(int $batch = 100): int

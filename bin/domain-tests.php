@@ -23,7 +23,7 @@ spl_autoload_register(static function (string $class): void {
     $parts = explode('\\', $class);
     array_shift($parts);                 // drop "Modules"
     $module = strtolower(array_shift($parts));
-    $path = __DIR__ . '/../app-modules/' . $module . '/src/' . implode('/', $parts) . '.php';
+    $path = __DIR__.'/../app-modules/'.$module.'/src/'.implode('/', $parts).'.php';
     if (is_file($path)) {
         require $path;
     }
@@ -36,7 +36,10 @@ use Modules\Finance\Domain\Ledger\JournalDraft;
 use Modules\Finance\Domain\Ledger\JournalLineDraft;
 use Modules\Finance\Domain\Ledger\LedgerException;
 use Modules\Finance\Domain\Ledger\ProgressInvoicePostingRule;
+use Modules\Finance\Domain\Ledger\VendorBillPostingRule;
 use Modules\Finance\Domain\Psak72Calculator;
+use Modules\Payables\Domain\SubcontractBillCalculator;
+use Modules\Payables\Domain\VendorBillFact;
 use Modules\Platform\Domain\Currency;
 use Modules\Platform\Domain\Money;
 use Modules\Tax\Domain\PphFinalRateResolver;
@@ -86,7 +89,7 @@ function assertThrows(string $exceptionClass, callable $fn, string $ctx = ''): v
         if ($e instanceof $exceptionClass) {
             return;
         }
-        throw new RuntimeException("{$ctx} expected {$exceptionClass}, got " . $e::class);
+        throw new RuntimeException("{$ctx} expected {$exceptionClass}, got ".$e::class);
     }
     throw new RuntimeException("{$ctx} expected {$exceptionClass}, nothing thrown");
 }
@@ -216,7 +219,7 @@ test('worked example ties out and the posted journal balances', function () use 
         'contract_revenue' => '4101',
         'ppn_output' => '2151',
     ]);
-    $journal = (new ProgressInvoicePostingRule())->toJournal($fact->toPayload(), $accounts);
+    $journal = (new ProgressInvoicePostingRule)->toJournal($fact->toPayload(), $accounts);
 
     $debits = 0;
     $credits = 0;
@@ -228,11 +231,80 @@ test('worked example ties out and the posted journal balances', function () use 
     assertSameInt(1_110_000, $debits, 'total movement = work + PPN');
 });
 
+// --- Subcontract bill money path (procure-to-pay, pure) ----------------------
+fwrite(STDOUT, "\nSubcontract bill money path\n");
+
+test('subcontractor bill ties out and its accrual journal balances', function () use ($resolver, $today, $IDR) {
+    // Rp 500.000 certified subcontract work; 5% retensi; 11% PPN (vendor is PKP);
+    // subcontractor holds a small (kecil) SBU doing pelaksanaan -> 1.75% PPh final.
+    $rate = $resolver->resolve(ServiceClass::ConstructionWork, SbuClass::Small, $today);
+    $calc = new SubcontractBillCalculator(new PpnCalculator(11));
+    $b = $calc->calculate(Money::of(500_000, $IDR), 5, $rate, vendorIsPkp: true);
+
+    assertSameInt(500_000, $b->workValue->minor, 'work value');
+    assertSameInt(55_000, $b->ppnInput->minor, 'PPN input 11%');
+    assertSameInt(25_000, $b->retention->minor, 'retensi 5%');
+    assertSameInt(8_750, $b->pphFinal->minor, 'PPh final 1.75%');
+    assertSameInt(521_250, $b->netPayable->minor, 'net payable = 500k + 55k − 25k − 8.75k');
+
+    // Map the fact to a journal via the Finance posting rule and confirm it balances.
+    $fact = VendorBillFact::fromResult('BILL-001', 'PRJ-001', null, 'SUB', $b);
+    $accounts = new AccountMap([
+        'subcontract_cost' => '5101',
+        'ppn_input' => '1152',
+        'accounts_payable' => '2101',
+        'retention_payable' => '2104',
+        'pph_final_payable' => '2131',
+    ]);
+    $journal = (new VendorBillPostingRule)->toJournal($fact->toPayload(), $accounts);
+
+    $debits = 0;
+    $credits = 0;
+    foreach ($journal->lines as $line) {
+        $debits += $line->debit->minor;
+        $credits += $line->credit->minor;
+    }
+    assertSameInt($credits, $debits, 'accrual journal balances');
+    assertSameInt(555_000, $debits, 'total movement = work + PPN');
+});
+
+test('a non-PKP vendor bill drops the input-VAT line and still balances', function () use ($resolver, $today, $IDR) {
+    $rate = $resolver->resolve(ServiceClass::ConstructionWork, SbuClass::Small, $today);
+    $calc = new SubcontractBillCalculator(new PpnCalculator(11));
+    $b = $calc->calculate(Money::of(500_000, $IDR), 5, $rate, vendorIsPkp: false);
+
+    assertSameInt(0, $b->ppnInput->minor, 'no creditable input VAT for a non-PKP vendor');
+    assertSameInt(466_250, $b->netPayable->minor, 'net = 500k − 25k − 8.75k');
+
+    $fact = VendorBillFact::fromResult('BILL-002', null, null, 'SUB', $b);
+    $accounts = new AccountMap([
+        'subcontract_cost' => '5101',
+        'ppn_input' => '1152',
+        'accounts_payable' => '2101',
+        'retention_payable' => '2104',
+        'pph_final_payable' => '2131',
+    ]);
+    $journal = (new VendorBillPostingRule)->toJournal($fact->toPayload(), $accounts);
+
+    $debits = 0;
+    $credits = 0;
+    foreach ($journal->lines as $line) {
+        $debits += $line->debit->minor;
+        $credits += $line->credit->minor;
+    }
+    assertSameInt($credits, $debits, 'journal still balances without input VAT');
+    assertSameInt(500_000, $debits, 'total movement = work only');
+    // The PPN Masukan line must not appear at all.
+    foreach ($journal->lines as $line) {
+        assertTrue($line->accountCode !== '1152', 'no zero PPN Masukan line');
+    }
+});
+
 // --- PSAK 72 revenue recognition ---------------------------------------------
 fwrite(STDOUT, "\nPSAK 72 (percentage of completion)\n");
 
 test('cost-to-cost POC and contract asset when recognized exceeds billed', function () use ($IDR) {
-    $calc = new Psak72Calculator();
+    $calc = new Psak72Calculator;
     $contract = Money::of(10_000_000_000, $IDR);
     $poc = $calc->pocRatioPpm(Money::of(2_000_000_000, $IDR), Money::of(8_000_000_000, $IDR));
     assertSameInt(250_000, $poc, 'POC ppm = 25%');
@@ -245,14 +317,14 @@ test('cost-to-cost POC and contract asset when recognized exceeds billed', funct
 });
 
 test('contract liability when billing runs ahead of recognition', function () use ($IDR) {
-    $calc = new Psak72Calculator();
+    $calc = new Psak72Calculator;
     $r = $calc->recognize(Money::of(10_000_000_000, $IDR), 250_000, Money::zero($IDR), Money::of(3_000_000_000, $IDR));
     assertSameInt(0, $r->contractAsset->minor, 'no asset');
     assertSameInt(500_000_000, $r->contractLiability->minor, 'advance-billing liability');
 });
 
 // --- summary -----------------------------------------------------------------
-fwrite(STDOUT, "\n" . str_repeat('─', 48) . "\n");
+fwrite(STDOUT, "\n".str_repeat('─', 48)."\n");
 fwrite(STDOUT, sprintf("  %d passed, %d failed\n", $passed, $failed));
 if ($failed > 0) {
     fwrite(STDOUT, "\nFAILURES:\n");

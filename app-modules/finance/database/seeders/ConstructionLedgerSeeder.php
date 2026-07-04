@@ -27,6 +27,9 @@ final class ConstructionLedgerSeeder
         '5101' => ['Beban Pokok Kontrak', AccountType::Expense],
         '1301' => ['Persediaan Proyek', AccountType::Asset],
         '2101' => ['Utang Usaha', AccountType::Liability],
+        '1152' => ['PPN Masukan', AccountType::Asset],
+        '2104' => ['Utang Retensi', AccountType::Liability],
+        '2131' => ['Utang PPh Final Konstruksi', AccountType::Liability],
     ];
 
     /** posting role => account code, for the progress-invoice fact */
@@ -39,6 +42,15 @@ final class ConstructionLedgerSeeder
         'ppn_output' => '2151',
     ];
 
+    /** posting role => account code, for the subcontractor-bill fact (the P2P mirror) */
+    private const VENDOR_BILL_ROLES = [
+        'subcontract_cost' => '5101',
+        'ppn_input' => '1152',
+        'accounts_payable' => '2101',
+        'retention_payable' => '2104',
+        'pph_final_payable' => '2131',
+    ];
+
     public function seedForCompany(string $companyId): void
     {
         foreach (self::ACCOUNTS as $code => [$name, $type]) {
@@ -48,9 +60,18 @@ final class ConstructionLedgerSeeder
             );
         }
 
-        foreach (self::PROGRESS_INVOICE_ROLES as $role => $code) {
+        $this->seedRoles($companyId, 'billing.progress_invoice_issued', self::PROGRESS_INVOICE_ROLES);
+        $this->seedRoles($companyId, 'payables.vendor_bill_approved', self::VENDOR_BILL_ROLES);
+    }
+
+    /**
+     * @param  array<string, string>  $roles  posting role => account code
+     */
+    private function seedRoles(string $companyId, string $factType, array $roles): void
+    {
+        foreach ($roles as $role => $code) {
             DB::table('fin_posting_rules')->updateOrInsert(
-                ['company_id' => $companyId, 'fact_type' => 'billing.progress_invoice_issued', 'role' => $role],
+                ['company_id' => $companyId, 'fact_type' => $factType, 'role' => $role],
                 ['id' => (string) Str::uuid(), 'account_code' => $code, 'updated_at' => now(), 'created_at' => now()],
             );
         }

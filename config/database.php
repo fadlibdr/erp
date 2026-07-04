@@ -47,7 +47,7 @@ return [
         'client' => env('REDIS_CLIENT', 'phpredis'),
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => Str::slug(env('APP_NAME', 'karya'), '_') . '_database_',
+            'prefix' => Str::slug(env('APP_NAME', 'karya'), '_').'_database_',
         ],
         'default' => [
             'url' => env('REDIS_URL'),

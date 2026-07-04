@@ -12,8 +12,6 @@ use RuntimeException;
  * and are per-company configuration — so onboarding a customer with a different
  * chart of accounts is data entry, not a code change. The engine only ever asks
  * this map for a role; it never hardcodes an account number.
- *
- * @implements \ArrayAccess<string,string>
  */
 final class AccountMap
 {
@@ -22,8 +20,7 @@ final class AccountMap
      */
     public function __construct(
         private readonly array $roles,
-    ) {
-    }
+    ) {}
 
     public function code(string $role): string
     {

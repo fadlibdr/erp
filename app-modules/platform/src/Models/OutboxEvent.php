@@ -6,14 +6,18 @@ namespace Modules\Platform\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
  * @property string $company_id
  * @property string $type
- * @property array $payload
+ * @property array<string, mixed> $payload
  * @property string|null $dedup_key
- * @property \Illuminate\Support\Carbon|null $processed_at
+ * @property Carbon|null $available_at
+ * @property Carbon|null $processed_at
+ * @property int $attempts
+ * @property string|null $last_error
  */
 final class OutboxEvent extends Model
 {

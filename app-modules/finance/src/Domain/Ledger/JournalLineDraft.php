@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Finance\Domain\Ledger;
 
+use Modules\Platform\Domain\Currency;
 use Modules\Platform\Domain\Money;
 
 /**
@@ -21,8 +22,7 @@ final class JournalLineDraft
         public readonly ?string $wbsId = null,
         public readonly ?string $costCode = null,
         public readonly ?string $memo = null,
-    ) {
-    }
+    ) {}
 
     public static function debit(
         string $accountCode,
@@ -46,7 +46,7 @@ final class JournalLineDraft
         return new self($accountCode, Money::zero($amount->currency), $amount, $projectId, $wbsId, $costCode, $memo);
     }
 
-    public function currency(): \Modules\Platform\Domain\Currency
+    public function currency(): Currency
     {
         return $this->debit->currency;
     }

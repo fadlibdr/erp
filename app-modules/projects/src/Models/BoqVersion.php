@@ -32,7 +32,7 @@ final class BoqVersion extends Model
         return $this->status === 'locked';
     }
 
-    /** @return HasMany<BoqLine> */
+    /** @return HasMany<BoqLine, $this> */
     public function lines(): HasMany
     {
         return $this->hasMany(BoqLine::class, 'boq_version_id');

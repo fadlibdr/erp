@@ -6,6 +6,7 @@ namespace Modules\Tax\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 /**
  * Eloquent row for a stored PPh-final rate. The domain resolver operates on the
@@ -15,6 +16,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $service_class
  * @property string $sbu_class
  * @property int $rate_numerator
+ * @property Carbon $effective_from
+ * @property Carbon|null $effective_to
+ * @property string $regulation_ref
  */
 final class PphFinalRateRow extends Model
 {

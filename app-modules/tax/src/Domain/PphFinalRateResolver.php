@@ -20,8 +20,7 @@ final class PphFinalRateResolver
 {
     public function __construct(
         private readonly PphFinalRateTable $table,
-    ) {
-    }
+    ) {}
 
     public function resolve(
         ServiceClass $serviceClass,

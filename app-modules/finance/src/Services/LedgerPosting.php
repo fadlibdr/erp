@@ -27,8 +27,7 @@ final class LedgerPosting
     public function __construct(
         private readonly NumberingService $numbering,
         private readonly FiscalPeriodGuard $periods,
-    ) {
-    }
+    ) {}
 
     public function post(string $companyId, JournalDraft $draft, string $date): Journal
     {

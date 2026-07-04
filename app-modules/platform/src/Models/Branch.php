@@ -21,7 +21,7 @@ final class Branch extends Model
 
     protected $casts = ['custom_fields' => 'array'];
 
-    /** @return BelongsTo<Company, Branch> */
+    /** @return BelongsTo<Company, $this> */
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);

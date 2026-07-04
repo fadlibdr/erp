@@ -11,44 +11,44 @@ parameters:
   layers:
     - name: Platform
       collectors:
-        - type: className
-          value: ^Modules\\Platform\\
+        - type: classNameRegex
+          value: '#^Modules\\Platform\\#'
     - name: Finance
       collectors:
-        - type: className
-          value: ^Modules\\Finance\\
+        - type: classNameRegex
+          value: '#^Modules\\Finance\\#'
     - name: Tax
       collectors:
-        - type: className
-          value: ^Modules\\Tax\\
+        - type: classNameRegex
+          value: '#^Modules\\Tax\\#'
     - name: Projects
       collectors:
-        - type: className
-          value: ^Modules\\Projects\\
+        - type: classNameRegex
+          value: '#^Modules\\Projects\\#'
     - name: Procurement
       collectors:
-        - type: className
-          value: ^Modules\\Procurement\\
+        - type: classNameRegex
+          value: '#^Modules\\Procurement\\#'
     - name: Inventory
       collectors:
-        - type: className
-          value: ^Modules\\Inventory\\
+        - type: classNameRegex
+          value: '#^Modules\\Inventory\\#'
     - name: Receivables
       collectors:
-        - type: className
-          value: ^Modules\\Receivables\\
+        - type: classNameRegex
+          value: '#^Modules\\Receivables\\#'
     - name: Payables
       collectors:
-        - type: className
-          value: ^Modules\\Payables\\
+        - type: classNameRegex
+          value: '#^Modules\\Payables\\#'
     - name: Billing
       collectors:
-        - type: className
-          value: ^Modules\\Billing\\
+        - type: classNameRegex
+          value: '#^Modules\\Billing\\#'
     - name: Reporting
       collectors:
-        - type: className
-          value: ^Modules\\Reporting\\
+        - type: classNameRegex
+          value: '#^Modules\\Reporting\\#'
 
   ruleset:
     Platform: ~

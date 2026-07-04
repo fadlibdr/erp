@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Modules\Billing\Events;
+namespace Modules\Payables\Events;
 
-use Modules\Billing\Domain\ProgressInvoiceFact;
+use Modules\Payables\Domain\VendorBillFact;
 use Modules\Platform\Domain\DomainEvent;
 
 /**
- * The outbox envelope for a termin invoice. Billing publishes this; the Finance
- * posting engine consumes it. Billing knows nothing about accounts.
+ * The outbox envelope for an approved subcontractor bill. Payables publishes this;
+ * the Finance posting engine consumes it. Payables knows nothing about accounts.
  */
-final class ProgressInvoiceIssued implements DomainEvent
+final class VendorBillApproved implements DomainEvent
 {
     public function __construct(
         private readonly string $companyId,
-        private readonly ProgressInvoiceFact $fact,
+        private readonly VendorBillFact $fact,
     ) {}
 
     public function type(): string
     {
-        return ProgressInvoiceFact::TYPE;
+        return VendorBillFact::TYPE;
     }
 
     /** @return array<string, mixed> */
@@ -36,6 +36,6 @@ final class ProgressInvoiceIssued implements DomainEvent
 
     public function dedupKey(): string
     {
-        return 'progress_invoice:'.$this->fact->claimId;
+        return 'vendor_bill:'.$this->fact->billId;
     }
 }

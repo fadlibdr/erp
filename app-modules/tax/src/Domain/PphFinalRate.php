@@ -21,8 +21,7 @@ final class PphFinalRate
         public readonly string $effectiveFrom,    // 'YYYY-MM-DD' inclusive
         public readonly ?string $effectiveTo,     // 'YYYY-MM-DD' inclusive, or null = open-ended
         public readonly string $regulationRef,    // e.g. 'PP 9/2022' or 'PP 51/2008 jo PP 40/2009'
-    ) {
-    }
+    ) {}
 
     public const DENOMINATOR = 10_000;
 
@@ -43,6 +42,6 @@ final class PphFinalRate
 
     public function percent(): string
     {
-        return number_format($this->rateNumerator / self::DENOMINATOR * 100, 2) . '%';
+        return number_format($this->rateNumerator / self::DENOMINATOR * 100, 2).'%';
     }
 }

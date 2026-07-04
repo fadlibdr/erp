@@ -13,6 +13,4 @@ namespace Modules\Platform\Actions;
  * in one place and the UI layer disposable — the reason a 10-year ERP survives a
  * framework-UI rewrite (Filament 3 -> 4) with the blast radius limited to the skin.
  */
-abstract class Action
-{
-}
+abstract class Action {}

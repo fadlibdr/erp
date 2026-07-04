@@ -26,8 +26,7 @@ final class TerminCalculator
 {
     public function __construct(
         private readonly PpnCalculator $ppn,
-    ) {
-    }
+    ) {}
 
     public function calculate(
         Money $workValue,

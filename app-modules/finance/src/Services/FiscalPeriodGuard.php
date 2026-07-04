@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Finance\Services;
 
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
@@ -16,7 +17,7 @@ final class FiscalPeriodGuard
     {
         $label = substr($date, 0, 7); // "YYYY-MM"
 
-        $closed = \Illuminate\Support\Facades\DB::table('fin_fiscal_periods')
+        $closed = DB::table('fin_fiscal_periods')
             ->where('company_id', $companyId)
             ->where('label', $label)
             ->where('status', 'closed')

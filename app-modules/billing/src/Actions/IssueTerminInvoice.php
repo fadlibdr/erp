@@ -41,8 +41,7 @@ final class IssueTerminInvoice extends Action
         private readonly PphFinalRateRepository $rates,
         private readonly Outbox $outbox,
         private readonly NumberingService $numbering,
-    ) {
-    }
+    ) {}
 
     public function execute(ProgressClaim $claim): ProgressClaim
     {
@@ -67,7 +66,7 @@ final class IssueTerminInvoice extends Action
             pphRate: $rate,
         );
 
-        return DB::transaction(function () use ($claim, $project, $result, $currency) {
+        return DB::transaction(function () use ($claim, $project, $result) {
             $claim->fill([
                 'number' => $claim->number ?? $this->numbering->next($claim->company_id, 'progress_claim'),
                 'status' => 'invoiced',

@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use Tests\TestCase;
 
 /*
 |--------------------------------------------------------------------------
@@ -11,7 +12,7 @@ declare(strict_types=1);
 | bin/domain-tests.php so they run in CI alongside the rest of the suite.
 */
 
-pest()->extend(Tests\TestCase::class)->in('Feature');
+pest()->extend(TestCase::class)->in('Feature');
 
 expect()->extend('toBalance', function () {
     $debits = 0;

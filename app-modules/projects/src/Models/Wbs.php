@@ -25,13 +25,13 @@ final class Wbs extends Model
 
     protected $casts = ['depth' => 'integer', 'weight_ppm' => 'integer'];
 
-    /** @return BelongsTo<Project, Wbs> */
+    /** @return BelongsTo<Project, $this> */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    /** @return BelongsTo<Wbs, Wbs> */
+    /** @return BelongsTo<Wbs, $this> */
     public function parent(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_id');

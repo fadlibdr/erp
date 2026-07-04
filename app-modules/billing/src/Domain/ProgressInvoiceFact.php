@@ -29,8 +29,7 @@ final class ProgressInvoiceFact
         public readonly Money $netReceivable,
         public readonly int $pphRateNumerator,
         public readonly string $pphRegulationRef,
-    ) {
-    }
+    ) {}
 
     public static function fromTermin(string $claimId, string $projectId, TerminResult $t): self
     {

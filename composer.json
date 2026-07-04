@@ -15,7 +15,8 @@
         "laravel/tinker": "^2.9",
         "owen-it/laravel-auditing": "^13.6",
         "spatie/laravel-backup": "^9.1",
-        "spatie/laravel-permission": "^6.9"
+        "spatie/laravel-permission": "^6.9",
+        "wikimedia/composer-merge-plugin": "^2.1"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.1",
@@ -31,7 +32,19 @@
         "psr-4": {
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
-            "Database\\Seeders\\": "database/seeders/"
+            "Database\\Seeders\\": "database/seeders/",
+            "Modules\\Platform\\": "app-modules/platform/src/",
+            "Modules\\Finance\\": "app-modules/finance/src/",
+            "Modules\\Finance\\Database\\Seeders\\": "app-modules/finance/database/seeders/",
+            "Modules\\Tax\\": "app-modules/tax/src/",
+            "Modules\\Tax\\Database\\Seeders\\": "app-modules/tax/database/seeders/",
+            "Modules\\Projects\\": "app-modules/projects/src/",
+            "Modules\\Procurement\\": "app-modules/procurement/src/",
+            "Modules\\Inventory\\": "app-modules/inventory/src/",
+            "Modules\\Receivables\\": "app-modules/receivables/src/",
+            "Modules\\Payables\\": "app-modules/payables/src/",
+            "Modules\\Billing\\": "app-modules/billing/src/",
+            "Modules\\Reporting\\": "app-modules/reporting/src/"
         }
     },
     "autoload-dev": {
@@ -67,7 +80,8 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true,
-            "internachi/modular": true
+            "internachi/modular": true,
+            "wikimedia/composer-merge-plugin": true
         },
         "sort-packages": true
     },

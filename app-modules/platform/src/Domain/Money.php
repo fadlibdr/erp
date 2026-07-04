@@ -20,8 +20,7 @@ final class Money
     private function __construct(
         public readonly int $minor,
         public readonly Currency $currency,
-    ) {
-    }
+    ) {}
 
     /** Build from an integer amount already expressed in minor units. */
     public static function ofMinor(int $minor, Currency $currency): self

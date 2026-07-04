@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $name
  * @property bool $is_kso
  * @property string $base_currency
+ * @property string|null $sbu_class
  */
 final class Company extends Model
 {
@@ -33,7 +34,7 @@ final class Company extends Model
         'custom_fields' => 'array',
     ];
 
-    /** @return HasMany<Branch> */
+    /** @return HasMany<Branch, $this> */
     public function branches(): HasMany
     {
         return $this->hasMany(Branch::class);

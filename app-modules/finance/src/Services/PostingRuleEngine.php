@@ -28,8 +28,7 @@ final class PostingRuleEngine
 
     public function __construct(
         private readonly LedgerPosting $ledger,
-    ) {
-    }
+    ) {}
 
     public function register(PostingRule $rule): void
     {
@@ -67,7 +66,7 @@ final class PostingRuleEngine
 
         if ($roles === []) {
             throw new RuntimeException(
-                "No posting rules configured for fact '{$factType}' on this company. " .
+                "No posting rules configured for fact '{$factType}' on this company. ".
                 'Seed fin_posting_rules for the company before posting.',
             );
         }

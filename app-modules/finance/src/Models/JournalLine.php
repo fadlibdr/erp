@@ -10,10 +10,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property string $id
+ * @property string $company_id
  * @property string $account_code
  * @property int $debit_minor
  * @property int $credit_minor
+ * @property string $currency
  * @property string|null $project_id
+ * @property string|null $wbs_id
+ * @property string|null $cost_code
+ * @property string|null $memo
  */
 final class JournalLine extends Model
 {
@@ -28,7 +33,7 @@ final class JournalLine extends Model
 
     protected $casts = ['debit_minor' => 'integer', 'credit_minor' => 'integer'];
 
-    /** @return BelongsTo<Journal, JournalLine> */
+    /** @return BelongsTo<Journal, $this> */
     public function journal(): BelongsTo
     {
         return $this->belongsTo(Journal::class);

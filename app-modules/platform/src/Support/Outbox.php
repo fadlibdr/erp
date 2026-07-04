@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Platform\Support;
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Platform\Domain\DomainEvent;
 use Modules\Platform\Models\OutboxEvent;
@@ -25,6 +26,12 @@ final class Outbox
             'type' => $event->type(),
             'payload' => $event->payload(),
             'dedup_key' => $dedupKey,
+            // Available from the start of this second. The column is timestamp(0),
+            // so relying on the DB default (CURRENT_TIMESTAMP) would *round* the
+            // sub-second part and could push availability into the next second —
+            // making a just-published event briefly unclaimable. Flooring to the
+            // second here keeps `available_at <= now()` true for an immediate relay.
+            'available_at' => now()->startOfSecond(),
         ]);
     }
 
@@ -33,7 +40,7 @@ final class Outbox
      * worker already holds (SKIP LOCKED). Returns them still unprocessed; the
      * caller marks each processed once its handlers succeed.
      *
-     * @return \Illuminate\Support\Collection<int, OutboxEvent>
+     * @return Collection<int, OutboxEvent>
      */
     public function claim(int $limit = 100)
     {

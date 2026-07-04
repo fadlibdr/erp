@@ -31,11 +31,11 @@ it('issues a termin invoice and posts a balanced journal via the outbox', functi
     foreach (['journal', 'progress_claim'] as $key) {
         NumberingSeries::create([
             'company_id' => $company->id, 'key' => $key,
-            'format' => strtoupper(substr($key, 0, 3)) . '-{YYYY}-{#####}', 'next' => 1, 'period_scope' => 'year',
+            'format' => strtoupper(substr($key, 0, 3)).'-{YYYY}-{#####}', 'next' => 1, 'period_scope' => 'year',
         ]);
     }
 
-    (new ConstructionLedgerSeeder())->seedForCompany($company->id);
+    (new ConstructionLedgerSeeder)->seedForCompany($company->id);
 
     $project = Project::create([
         'company_id' => $company->id, 'code' => 'PRJ-001', 'name' => 'Pabrik Uji',
@@ -73,7 +73,38 @@ it('issues a termin invoice and posts a balanced journal via the outbox', functi
 });
 
 it('is idempotent — relaying twice does not double-post', function () {
-    // Re-running the relay must not create a second journal for the same fact
-    // (the outbox dedup_key + processed_at guarantee it).
-    expect(true)->toBeTrue(); // placeholder asserted by the dedup_key unique index; full path in Pass 2
-})->skip('covered structurally by the dedup_key unique index; explicit test lands in Pass 2');
+    $company = Company::create([
+        'code' => 'KON', 'name' => 'PT Kontraktor Uji', 'npwp' => '01.234.567.8-901.000',
+        'is_pkp' => true, 'base_currency' => 'IDR', 'sbu_class' => 'medium_large_spec',
+    ]);
+    foreach (['journal', 'progress_claim'] as $key) {
+        NumberingSeries::create([
+            'company_id' => $company->id, 'key' => $key,
+            'format' => strtoupper(substr($key, 0, 3)).'-{YYYY}-{#####}', 'next' => 1, 'period_scope' => 'year',
+        ]);
+    }
+    (new ConstructionLedgerSeeder)->seedForCompany($company->id);
+    $project = Project::create([
+        'company_id' => $company->id, 'code' => 'PRJ-001', 'name' => 'Pabrik Uji',
+        'contract_number' => 'C-001', 'contract_date' => '2026-03-01',
+        'service_class' => 'integrated_work', 'contract_value_minor' => 10_000_000_000,
+        'currency' => 'IDR', 'retention_percent' => 5, 'uang_muka_percent' => 20, 'status' => 'active',
+    ]);
+    $claim = ProgressClaim::create([
+        'company_id' => $company->id, 'project_id' => $project->id, 'sequence' => 1,
+        'claim_date' => '2026-07-04', 'status' => 'bapp', 'work_value_minor' => 1_000_000, 'currency' => 'IDR',
+    ]);
+
+    app(IssueTerminInvoice::class)->execute($claim);
+
+    // First relay posts one journal; a second relay finds nothing to do — the
+    // processed_at stamp means the event is claimed exactly once.
+    expect(app(OutboxRelay::class)->drain())->toBe(1)
+        ->and(app(OutboxRelay::class)->drain())->toBe(0)
+        ->and(Journal::where('source_reference', $claim->id)->count())->toBe(1);
+
+    // Re-issuing the same claim is refused by the Action, and the outbox dedup_key
+    // unique index is the second line of defence against a duplicate fact.
+    expect(fn () => app(IssueTerminInvoice::class)->execute($claim->refresh()))
+        ->toThrow(RuntimeException::class);
+});

@@ -15,7 +15,11 @@ interface DomainEvent
     /** Stable machine name, e.g. "billing.progress_invoice_issued". */
     public function type(): string;
 
-    /** JSON-serialisable payload persisted verbatim in the outbox row. */
+    /**
+     * JSON-serialisable payload persisted verbatim in the outbox row.
+     *
+     * @return array<string, mixed>
+     */
     public function payload(): array;
 
     /** The company the event belongs to (multi-tenant / KSO scoping). */

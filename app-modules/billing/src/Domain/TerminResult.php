@@ -22,8 +22,7 @@ final class TerminResult
         public readonly Money $netReceivable,      // cash the contractor actually collects this termin
         public readonly int $pphRateNumerator,     // provenance of the tax figure (over 10_000)
         public readonly string $pphRegulationRef,
-    ) {
-    }
+    ) {}
 
     /** The gross invoice face value (work + PPN) before withholdings. */
     public function grossInvoice(): Money
