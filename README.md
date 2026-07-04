@@ -4,7 +4,7 @@ A Laravel 11 **modular monolith** for Engineering–Procurement–Construction c
 
 This repository is **Pass 1**: the architectural spine plus the two highest-risk pieces (the double-entry ledger and the construction-tax engine) built to depth with tests, and one end-to-end "money path" vertical slice. See `docs`-equivalent strategy in the accompanying blueprint. What is deferred is listed at the bottom.
 
-> **Provenance note.** The domain layer was authored and its invariants verified with the PHP CLI (`php bin/domain-tests.php`, **24/24 green** as of Pass 4). As of Pass 2 the full stack is validated too: `composer check` (Pint + PHPStan L8 + deptrac + Pest) runs green against a real PostgreSQL database; Pass 3 adds four feature tests (commitment loop, GR/IR accrual, month-end close, e-Faktur) the team runs there. Pass 2 also fixed three latent wiring defects Pass 1 shipped unvalidated — see *Pass 2* below.
+> **Provenance note.** The domain layer was authored and its invariants verified with the PHP CLI (`php bin/domain-tests.php`, **29/29 green** as of Pass 5). As of Pass 2 the full stack is validated too: `composer check` (Pint + PHPStan L8 + deptrac + Pest) runs green against a real PostgreSQL database; Pass 3 adds four feature tests (commitment loop, GR/IR accrual, month-end close, e-Faktur) the team runs there. Pass 2 also fixed three latent wiring defects Pass 1 shipped unvalidated — see *Pass 2* below.
 
 ## Architecture in one screen
 
@@ -30,7 +30,7 @@ app-modules/
 php bin/domain-tests.php
 ```
 
-Runs the pure-domain suite with just the PHP CLI: Money allocation/rounding, the **PPh-final resolver incl. the pre-2022 transitional rule**, the **double-entry balance invariant**, the **termin money path** and its payables mirror the **subcontractor-bill money path** (each posting a balanced journal), and **PSAK 72** cost-to-cost recognition — plus the Pass 3 legs: **budget control** (OK/WARN/BLOCK), the **GR/IR accrual** balance, **moving-average** valuation, **three-way match**, the **PSAK 72 month-end true-up**, the **e-Faktur** XML + submission-status guard, and the **material bill** that clears GR/IR. Expected: `24 passed, 0 failed`.
+Runs the pure-domain suite with just the PHP CLI: Money allocation/rounding, the **PPh-final resolver incl. the pre-2022 transitional rule**, the **double-entry balance invariant**, the **termin money path** and its payables mirror the **subcontractor-bill money path** (each posting a balanced journal), and **PSAK 72** cost-to-cost recognition — plus the Pass 3 legs: **budget control** (OK/WARN/BLOCK), the **GR/IR accrual** balance, **moving-average** valuation, **three-way match**, the **PSAK 72 month-end true-up**, the **e-Faktur** XML + submission-status guard, and the **material bill** that clears GR/IR — plus the Pass 5 legs: **material-issue** costing, the three **settlement** entries (AP payment / AR receipt / retention release), **PPh 21 TER**, **BPJS**, and the **payroll** labor journal. Expected: `29 passed, 0 failed`.
 
 ## Full stack setup
 
@@ -107,7 +107,18 @@ The whole codebase is now Pint-clean and PHPStan-L8-clean (Pass 1 shipped with 4
 
 Verified in-session: `php bin/domain-tests.php` → **24 passed** (material-bill calc: no PPh, net = work + PPN − retention; GR/IR-clearing journal balances). Team-verified: `MaterialBillClearsGrIrTest` proves the loop closes end-to-end (GR/IR nets to zero) and that a mismatched bill is blocked.
 
-**Deferred to Pass 5+:** partial/over-receipt matching (Pass 4 assumes a full match) · material-issue → project-cost posting (Dr project cost · Cr inventory) · payment batches / settlement · Filament multi-company/tenant scoping (the panel is a single-company spine) · a BOQ-management resource (same CRUD pattern) · e-Faktur NPWP enrichment/resolver · native payroll, tender, equipment, doc-control, HSE · the offline PWA · the `epcctl` upgrade CLI.
+## What Pass 5 adds
+
+**Four legs — the cost/settlement/labor picture completed. Landed as sub-commits 5A–5D.**
+
+- **Material issue → project cost (5A).** Stored stock becomes actual project cost when issued to a WBS: each line valued at moving average via a shared `StockLedger`, a negative stock movement appended, and `MaterialIssuePostingRule` posts **Dr Project Material Cost · Cr Inventory** — the GL expense the month-end close and budget actuals read.
+- **Settlement money path (5B).** The cash leg of both money paths, and the receivables module built out. `PayVendorBills` settles approved bills (**Dr AP · Cr Bank**); `RecordArInvoice` builds the AR sub-ledger from the termin fact; `ReceiveCustomerPayment` clears an invoice (**Dr Bank · Cr AR**); `ReleaseRetention` at FHO (**Dr Bank · Cr Retention Receivable**). Adds the seeded `1101 Kas & Bank`.
+- **Filament multi-company tenancy (5C).** `->tenant(Company::class)` with `App\Models\User` (`HasTenants`) + a `company_user` pivot; each resource model gains a `company()` ownership relation so queries auto-scope and `company_id` auto-fills on create — closing the create-form gap. Tenancy lives in the app layer; `Company` stays a plain, Filament-free Platform model.
+- **Payroll module (5D).** A new module with a fresh tax crown jewel: `Pph21TerCalculator` (PMK 168/2023 monthly TER by PTKP category) + `BpjsCalculator` (JHT/JP/JKK/JKM + Kesehatan, employee/employer split). `RunPayroll` posts a balanced labor journal — **Dr Labor Cost (to project/WBS) + Dr BPJS Expense / Cr Salaries Payable + Cr PPh 21 Payable + Cr BPJS Payable**.
+
+The seam held across all four: every write is an Action publishing a fact the outbox relay fans to Finance (and projections); `domain → {Finance, Tax} → Platform` stayed green, including the new `Payroll` layer. `bin/domain-tests.php` grew **24 → 29**; feature tests `MaterialIssueCostingTest`, `SettlementPathTest`, `PayrollRunTest` cover the flows end-to-end (team-verified).
+
+**Deferred to Pass 6+:** December PPh-21 annual (Pasal 17) true-up · BPJS/PPh remittance payments · partial/over-receipt matching · uang-muka amortization schedule · AR/AP aging · native tender, equipment, doc-control, HSE · the offline PWA · the `epcctl` upgrade CLI.
 
 ## License
 
