@@ -6,7 +6,9 @@ namespace Modules\Procurement\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Platform\Models\Company;
 
 /**
  * A goods receipt note (penerimaan barang) against a PO. Receiving consumes the
@@ -39,5 +41,11 @@ final class Grn extends Model
     public function lines(): HasMany
     {
         return $this->hasMany(GrnLine::class, 'grn_id');
+    }
+
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 }

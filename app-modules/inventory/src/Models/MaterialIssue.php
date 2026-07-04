@@ -6,6 +6,9 @@ namespace Modules\Inventory\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Platform\Models\Company;
 
 /**
  * A material issue from a warehouse to a WBS/cost code — the moment stored stock
@@ -34,4 +37,16 @@ final class MaterialIssue extends Model
         'issue_date' => 'date',
         'total_minor' => 'integer',
     ];
+
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    /** @return HasMany<MaterialIssueLine, $this> */
+    public function lines(): HasMany
+    {
+        return $this->hasMany(MaterialIssueLine::class);
+    }
 }
