@@ -44,7 +44,9 @@
             "Modules\\Receivables\\": "app-modules/receivables/src/",
             "Modules\\Payables\\": "app-modules/payables/src/",
             "Modules\\Billing\\": "app-modules/billing/src/",
-            "Modules\\Reporting\\": "app-modules/reporting/src/"
+            "Modules\\Reporting\\": "app-modules/reporting/src/",
+            "Modules\\Payroll\\": "app-modules/payroll/src/",
+            "Modules\\Payroll\\Database\\Seeders\\": "app-modules/payroll/database/seeders/"
         }
     },
     "autoload-dev": {

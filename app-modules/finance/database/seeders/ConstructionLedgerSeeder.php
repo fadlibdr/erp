@@ -37,6 +37,11 @@ final class ConstructionLedgerSeeder
         // Pass 5: cash/bank (settlement + payroll), material cost, payroll payables.
         '1101' => ['Kas & Bank', AccountType::Asset],
         '5102' => ['Beban Material Proyek', AccountType::Expense],
+        '5103' => ['Beban Upah Proyek', AccountType::Expense],
+        '5104' => ['Beban BPJS', AccountType::Expense],
+        '2141' => ['Utang Gaji', AccountType::Liability],
+        '2142' => ['Utang PPh 21', AccountType::Liability],
+        '2143' => ['Utang BPJS', AccountType::Liability],
     ];
 
     /** posting role => account code, for the progress-invoice fact */
@@ -101,6 +106,15 @@ final class ConstructionLedgerSeeder
         'retention_receivable' => '1103',
     ];
 
+    /** posting role => account code, for an approved payroll run (Pass 5D) */
+    private const PAYROLL_ROLES = [
+        'labor_cost' => '5103',
+        'bpjs_expense' => '5104',
+        'salaries_payable' => '2141',
+        'pph21_payable' => '2142',
+        'bpjs_payable' => '2143',
+    ];
+
     public function seedForCompany(string $companyId): void
     {
         foreach (self::ACCOUNTS as $code => [$name, $type]) {
@@ -119,6 +133,7 @@ final class ConstructionLedgerSeeder
         $this->seedRoles($companyId, 'payables.payment_made', self::VENDOR_PAYMENT_ROLES);
         $this->seedRoles($companyId, 'receivables.receipt_received', self::CUSTOMER_RECEIPT_ROLES);
         $this->seedRoles($companyId, 'receivables.retention_released', self::RETENTION_RELEASE_ROLES);
+        $this->seedRoles($companyId, 'payroll.run_approved', self::PAYROLL_ROLES);
     }
 
     /**

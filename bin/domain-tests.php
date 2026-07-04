@@ -41,6 +41,7 @@ use Modules\Finance\Domain\Ledger\LedgerException;
 use Modules\Finance\Domain\Ledger\CustomerReceiptPostingRule;
 use Modules\Finance\Domain\Ledger\MaterialBillPostingRule;
 use Modules\Finance\Domain\Ledger\MaterialIssuePostingRule;
+use Modules\Finance\Domain\Ledger\PayrollPostingRule;
 use Modules\Finance\Domain\Ledger\ProgressInvoicePostingRule;
 use Modules\Finance\Domain\Ledger\RetentionReleasePostingRule;
 use Modules\Finance\Domain\Ledger\VendorPaymentPostingRule;
@@ -52,6 +53,8 @@ use Modules\Inventory\Domain\StockBalance;
 use Modules\Payables\Domain\MaterialBillCalculator;
 use Modules\Payables\Domain\SubcontractBillCalculator;
 use Modules\Payables\Domain\VendorBillFact;
+use Modules\Payroll\Domain\BpjsCalculator;
+use Modules\Payroll\Domain\PayrollCalculator;
 use Modules\Platform\Domain\Currency;
 use Modules\Platform\Domain\Money;
 use Modules\Procurement\Domain\MatchVerdict;
@@ -62,6 +65,9 @@ use Modules\Tax\Domain\EfakturXmlBuilder;
 use Modules\Tax\Domain\PphFinalRateResolver;
 use Modules\Tax\Domain\PphFinalRateTable;
 use Modules\Tax\Domain\PpnCalculator;
+use Modules\Tax\Domain\Pph21TerCalculator;
+use Modules\Tax\Domain\Pph21TerTable;
+use Modules\Tax\Domain\PtkpStatus;
 use Modules\Tax\Domain\SbuClass;
 use Modules\Tax\Domain\ServiceClass;
 
@@ -600,6 +606,59 @@ test('e-Faktur status guard allows the happy path and refuses illegal jumps', fu
     assertThrows(RuntimeException::class, function () {
         EfakturSubmissionStatus::Acked->transitionTo(EfakturSubmissionStatus::Failed);
     }, 'cannot fail an acked invoice');
+});
+
+// --- Payroll (Pass 5D — PPh 21 TER + BPJS crown jewels) ----------------------
+fwrite(STDOUT, "\nPayroll (PPh 21 TER + BPJS + labor posting)\n");
+
+test('PPh 21 monthly TER withholds by category (PMK 168/2023)', function () use ($IDR) {
+    $calc = new Pph21TerCalculator(Pph21TerTable::statutory());
+    // Category A (K/0), gross Rp 10.000.000 → 9,65jt–10,05jt bracket = 2%.
+    $a = $calc->monthlyWithholding(Money::of(10_000_000, $IDR), PtkpStatus::K0);
+    assertSameInt(200_000, $a->minor, 'category A 2%');
+    // Category B (TK/2), gross Rp 8.000.000 → 7,3jt–9,2jt bracket = 1%.
+    $b = $calc->monthlyWithholding(Money::of(8_000_000, $IDR), PtkpStatus::TK2);
+    assertSameInt(80_000, $b->minor, 'category B 1%');
+    // Below the category-A threshold there is no withholding.
+    $zero = $calc->monthlyWithholding(Money::of(5_000_000, $IDR), PtkpStatus::TK0);
+    assertSameInt(0, $zero->minor, 'under PTKP threshold = 0');
+});
+
+test('BPJS splits employee and employer shares on gross', function () use ($IDR) {
+    // Gross Rp 8.000.000, below the JP and Kesehatan ceilings.
+    $b = (new BpjsCalculator)->on(Money::of(8_000_000, $IDR));
+    assertSameInt(320_000, $b->employee->minor, 'employee = JHT2% + JP1% + Kes1%');
+    assertSameInt(819_200, $b->employer->minor, 'employer = JHT3.7 + JP2 + JKK.24 + JKM.3 + Kes4');
+    assertSameInt(1_139_200, $b->total()->minor, 'total remitted to BPJS');
+});
+
+test('payroll run decomposes and posts a balanced labor journal', function () use ($IDR) {
+    $calc = new PayrollCalculator(new Pph21TerCalculator(Pph21TerTable::statutory()), new BpjsCalculator);
+    // Gross Rp 8.000.000, TK/0 (category A) → 1.5% PPh 21 = 120.000.
+    $r = $calc->calculate(Money::of(8_000_000, $IDR), PtkpStatus::TK0);
+    assertSameInt(120_000, $r->pph21->minor, 'PPh 21 1.5%');
+    assertSameInt(320_000, $r->bpjsEmployee->minor, 'BPJS employee');
+    assertSameInt(7_560_000, $r->net->minor, 'net = gross − PPh21 − BPJS employee');
+
+    $accounts = new AccountMap([
+        'labor_cost' => '5103', 'bpjs_expense' => '5104',
+        'salaries_payable' => '2141', 'pph21_payable' => '2142', 'bpjs_payable' => '2143',
+    ]);
+    $payload = [
+        'run_id' => 'PR-1', 'project_id' => 'PRJ-1', 'wbs_id' => 'W1', 'cost_code' => 'LAB',
+        'currency' => $IDR->value, 'labor' => 8_000_000, 'pph21' => 120_000,
+        'bpjs_employee' => 320_000, 'bpjs_employer' => 819_200, 'net' => 7_560_000,
+    ];
+    $journal = (new PayrollPostingRule)->toJournal($payload, $accounts);
+
+    $debits = 0;
+    $credits = 0;
+    foreach ($journal->lines as $line) {
+        $debits += $line->debit->minor;
+        $credits += $line->credit->minor;
+    }
+    assertSameInt($credits, $debits, 'payroll journal balances');
+    assertSameInt(8_819_200, $debits, 'movement = gross + employer BPJS');
 });
 
 // --- summary -----------------------------------------------------------------

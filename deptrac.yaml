@@ -49,6 +49,10 @@ parameters:
       collectors:
         - type: classNameRegex
           value: '#^Modules\\Reporting\\#'
+    - name: Payroll
+      collectors:
+        - type: classNameRegex
+          value: '#^Modules\\Payroll\\#'
 
   ruleset:
     Platform: ~
@@ -87,3 +91,10 @@ parameters:
       # outbox. Keep Finance out of this list to prove that seam holds.
     Reporting:
       - Platform
+    Payroll:
+      # Uses the Tax PPh-21 engine; posts to GL only through the outbox (Finance
+      # consumes the fact), so the arrow stays down — never a direct Finance write.
+      - Platform
+      - Tax
+      - Projects
+      - Finance

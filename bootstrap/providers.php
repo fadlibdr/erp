@@ -8,6 +8,7 @@ use Modules\Billing\Providers\BillingServiceProvider;
 use Modules\Finance\Providers\FinanceServiceProvider;
 use Modules\Inventory\Providers\InventoryServiceProvider;
 use Modules\Payables\Providers\PayablesServiceProvider;
+use Modules\Payroll\Providers\PayrollServiceProvider;
 use Modules\Platform\Providers\PlatformServiceProvider;
 use Modules\Procurement\Providers\ProcurementServiceProvider;
 use Modules\Projects\Providers\ProjectsServiceProvider;
@@ -35,4 +36,5 @@ return [
     PayablesServiceProvider::class,
     BillingServiceProvider::class,
     ReportingServiceProvider::class,
+    PayrollServiceProvider::class,
 ];

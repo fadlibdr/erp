@@ -1,0 +1,20 @@
+{
+    "name": "karya/payroll",
+    "description": "Payroll: PPh 21 (TER), BPJS, labor cost to project",
+    "license": "proprietary",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Payroll\\": "src/",
+            "Modules\\Payroll\\Database\\Factories\\": "database/factories/",
+            "Modules\\Payroll\\Database\\Seeders\\": "database/seeders/",
+            "Modules\\Payroll\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\Payroll\\Providers\\PayrollServiceProvider"
+            ]
+        }
+    }
+}

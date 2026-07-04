@@ -9,6 +9,7 @@ use Modules\Finance\Domain\Ledger\CustomerReceiptPostingRule;
 use Modules\Finance\Domain\Ledger\GrnPostingRule;
 use Modules\Finance\Domain\Ledger\MaterialBillPostingRule;
 use Modules\Finance\Domain\Ledger\MaterialIssuePostingRule;
+use Modules\Finance\Domain\Ledger\PayrollPostingRule;
 use Modules\Finance\Domain\Ledger\ProgressInvoicePostingRule;
 use Modules\Finance\Domain\Ledger\Psak72PostingRule;
 use Modules\Finance\Domain\Ledger\RetentionReleasePostingRule;
@@ -39,6 +40,7 @@ final class FinanceServiceProvider extends ServiceProvider
             $engine->register(new VendorPaymentPostingRule);    // Pass 5B: AP settlement
             $engine->register(new CustomerReceiptPostingRule);  // Pass 5B: AR receipt
             $engine->register(new RetentionReleasePostingRule); // Pass 5B: retention release
+            $engine->register(new PayrollPostingRule);          // Pass 5D: payroll labor cost
 
             return $engine;
         });
