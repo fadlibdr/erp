@@ -12,7 +12,6 @@ use Modules\Payables\Models\VendorBill;
 use Modules\Platform\Models\NumberingSeries;
 use Modules\Procurement\Actions\ApprovePurchaseOrder;
 use Modules\Procurement\Actions\ReceiveGoods;
-use Modules\Procurement\Models\PurchaseOrder;
 
 uses(RefreshDatabase::class);
 

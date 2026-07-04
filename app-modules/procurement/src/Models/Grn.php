@@ -35,7 +35,7 @@ final class Grn extends Model
         'total_minor' => 'integer',
     ];
 
-    /** @return HasMany<GrnLine> */
+    /** @return HasMany<GrnLine, $this> */
     public function lines(): HasMany
     {
         return $this->hasMany(GrnLine::class, 'grn_id');

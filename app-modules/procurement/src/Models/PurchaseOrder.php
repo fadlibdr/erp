@@ -6,7 +6,9 @@ namespace Modules\Procurement\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Platform\Models\Company;
 
 /**
  * A purchase order. On approval it raises a commitment against the project control
@@ -39,15 +41,16 @@ final class PurchaseOrder extends Model
         'total_minor' => 'integer',
     ];
 
-    /** @return HasMany<PurchaseOrderLine> */
+    /** @return HasMany<PurchaseOrderLine, $this> */
     public function lines(): HasMany
     {
         return $this->hasMany(PurchaseOrderLine::class);
     }
 
     // Tenant ownership: Filament scopes this resource to the current company.
-    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(\Modules\Platform\Models\Company::class);
+        return $this->belongsTo(Company::class);
     }
 }

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Finance\Domain\BudgetControlPolicy;
 use Modules\Finance\Domain\BudgetVerdict;
 use Modules\Finance\Services\CommitmentRepository;
+use Modules\Platform\Actions\Action;
 use Modules\Platform\Support\NumberingService;
 use Modules\Platform\Support\Outbox;
 use Modules\Procurement\Domain\PurchaseOrderFact;
@@ -85,7 +86,7 @@ final class ApprovePurchaseOrder extends Action
 
             $fact = new PurchaseOrderFact(
                 purchaseOrderId: $po->id,
-                projectId: $po->project_id,
+                projectId: (string) $po->project_id,
                 currency: $po->currency,
                 buckets: array_values($buckets),
             );

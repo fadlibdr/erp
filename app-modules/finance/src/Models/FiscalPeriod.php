@@ -6,7 +6,9 @@ namespace Modules\Finance\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Modules\Platform\Models\Company;
 
 /**
  * An accounting period. Posting is refused into a `closed` period by
@@ -41,8 +43,9 @@ final class FiscalPeriod extends Model
     }
 
     // Tenant ownership: Filament scopes this resource to the current company.
-    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(\Modules\Platform\Models\Company::class);
+        return $this->belongsTo(Company::class);
     }
 }

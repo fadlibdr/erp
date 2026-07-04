@@ -6,15 +6,20 @@ namespace Modules\Projects\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Modules\Platform\Domain\Currency;
 use Modules\Platform\Domain\Money;
+use Modules\Platform\Models\Company;
 
 /**
  * @property string $id
+ * @property string $company_id
  * @property string $code
+ * @property string $name
+ * @property string $status
  * @property int $contract_value_minor
  * @property string $currency
  * @property int $retention_percent
@@ -63,8 +68,9 @@ final class Project extends Model
     }
 
     // Tenant ownership: Filament scopes this resource to the current company.
-    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(\Modules\Platform\Models\Company::class);
+        return $this->belongsTo(Company::class);
     }
 }

@@ -11,7 +11,6 @@ use Modules\Inventory\Actions\IssueMaterials;
 use Modules\Inventory\Models\StockLedgerEntry;
 use Modules\Procurement\Actions\ApprovePurchaseOrder;
 use Modules\Procurement\Actions\ReceiveGoods;
-use Modules\Procurement\Models\PurchaseOrder;
 
 uses(RefreshDatabase::class);
 

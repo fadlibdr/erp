@@ -6,7 +6,9 @@ namespace Modules\Payables\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Modules\Platform\Models\Company;
 
 /**
  * A vendor / subcontractor bill — the payables mirror of a ProgressClaim. Created
@@ -18,10 +20,12 @@ use Illuminate\Support\Carbon;
  * @property string $company_id
  * @property string $vendor_id
  * @property string|null $project_id
+ * @property string|null $purchase_order_id
  * @property string|null $number
  * @property Carbon $bill_date
  * @property Carbon|null $contract_date
  * @property string $status
+ * @property string|null $match_status
  * @property int $work_value_minor
  * @property int $ppn_input_minor
  * @property string $currency
@@ -29,6 +33,12 @@ use Illuminate\Support\Carbon;
  * @property int $retention_percent
  * @property string|null $cost_code
  * @property string|null $wbs_id
+ * @property int $gross_minor
+ * @property int $pph_withheld_minor
+ * @property int $retention_minor
+ * @property int $net_payable_minor
+ * @property int $pph_rate_numerator
+ * @property string|null $pph_regulation_ref
  */
 final class VendorBill extends Model
 {
@@ -57,8 +67,9 @@ final class VendorBill extends Model
     ];
 
     // Tenant ownership: Filament scopes this resource to the current company.
-    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(\Modules\Platform\Models\Company::class);
+        return $this->belongsTo(Company::class);
     }
 }

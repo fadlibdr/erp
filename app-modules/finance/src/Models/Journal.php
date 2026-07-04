@@ -6,8 +6,10 @@ namespace Modules\Finance\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Modules\Platform\Models\Company;
 
 /**
  * An immutable posted journal. There is intentionally no update path; the only
@@ -45,8 +47,9 @@ final class Journal extends Model
     }
 
     // Tenant ownership: Filament scopes the GL viewer to the current company.
-    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(\Modules\Platform\Models\Company::class);
+        return $this->belongsTo(Company::class);
     }
 }

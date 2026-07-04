@@ -16,6 +16,7 @@ use Filament\Tables\Table;
 use Modules\Payables\Actions\ApproveMaterialBill;
 use Modules\Payables\Actions\ApproveSubcontractorBill;
 use Modules\Payables\Models\VendorBill;
+use Modules\Procurement\Models\PurchaseOrder;
 use Throwable;
 
 /**
@@ -40,7 +41,7 @@ final class VendorBillResource extends Resource
             Select::make('vendor_id')->label('Vendor')->relationship('vendor', 'name')->searchable()->required(),
             Select::make('project_id')->label('Proyek')->relationship('project', 'name')->searchable(),
             Select::make('purchase_order_id')->label('PO (untuk tagihan material)')
-                ->options(fn (): array => \Modules\Procurement\Models\PurchaseOrder::query()->pluck('number', 'id')->all())
+                ->options(fn (): array => PurchaseOrder::query()->pluck('number', 'id')->all())
                 ->searchable()
                 ->helperText('Isi untuk tagihan material — memicu three-way match & pelunasan GR/IR. Kosongkan untuk tagihan subkontraktor.'),
             TextInput::make('bill_date')->label('Tanggal Tagihan')->type('date')->required(),

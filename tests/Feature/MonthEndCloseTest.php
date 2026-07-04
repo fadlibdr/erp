@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Finance\Actions\CloseFiscalPeriod;
+use Modules\Finance\Database\Seeders\ConstructionLedgerSeeder;
 use Modules\Finance\Domain\Ledger\JournalDraft;
 use Modules\Finance\Domain\Ledger\JournalLineDraft;
 use Modules\Finance\Models\FiscalPeriod;
@@ -39,7 +40,7 @@ function karyaCloseFixture(): array
             'format' => strtoupper(substr($key, 0, 3)).'-{YYYY}-{#####}', 'next' => 1, 'period_scope' => 'year',
         ]);
     }
-    (new Modules\Finance\Database\Seeders\ConstructionLedgerSeeder)->seedForCompany($company->id);
+    (new ConstructionLedgerSeeder)->seedForCompany($company->id);
 
     $project = Project::create([
         'company_id' => $company->id, 'code' => 'PRJ-001', 'name' => 'Pabrik Uji',

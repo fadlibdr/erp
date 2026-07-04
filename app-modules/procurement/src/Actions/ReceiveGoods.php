@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Procurement\Actions;
 
 use Illuminate\Support\Facades\DB;
+use Modules\Platform\Actions\Action;
 use Modules\Platform\Support\NumberingService;
 use Modules\Platform\Support\Outbox;
 use Modules\Procurement\Domain\GoodsReceivedFact;

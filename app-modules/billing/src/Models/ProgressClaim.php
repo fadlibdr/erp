@@ -6,6 +6,8 @@ namespace Modules\Billing\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Platform\Models\Company;
 
 /**
  * @property string $id
@@ -42,8 +44,9 @@ final class ProgressClaim extends Model
     ];
 
     // Tenant ownership: Filament scopes this resource to the current company.
-    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(\Modules\Platform\Models\Company::class);
+        return $this->belongsTo(Company::class);
     }
 }

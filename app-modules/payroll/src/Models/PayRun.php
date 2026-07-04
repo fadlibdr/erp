@@ -45,7 +45,7 @@ final class PayRun extends Model
         'net_minor' => 'integer',
     ];
 
-    /** @return HasMany<PayRunLine> */
+    /** @return HasMany<PayRunLine, $this> */
     public function lines(): HasMany
     {
         return $this->hasMany(PayRunLine::class);

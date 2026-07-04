@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use Modules\Finance\Database\Seeders\ConstructionLedgerSeeder;
 use Modules\Platform\Models\Company;
 use Modules\Platform\Models\NumberingSeries;
 use Modules\Procurement\Models\PurchaseOrder;
@@ -56,7 +57,7 @@ function karyaCostControlFixture(): array
         ]);
     }
 
-    (new Modules\Finance\Database\Seeders\ConstructionLedgerSeeder)->seedForCompany($company->id);
+    (new ConstructionLedgerSeeder)->seedForCompany($company->id);
 
     $project = Project::create([
         'company_id' => $company->id, 'code' => 'PRJ-001', 'name' => 'Pabrik Uji',

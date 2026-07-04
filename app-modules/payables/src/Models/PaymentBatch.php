@@ -28,7 +28,7 @@ final class PaymentBatch extends Model
 
     protected $casts = ['payment_date' => 'date', 'total_minor' => 'integer'];
 
-    /** @return HasMany<PaymentBatchLine> */
+    /** @return HasMany<PaymentBatchLine, $this> */
     public function lines(): HasMany
     {
         return $this->hasMany(PaymentBatchLine::class);

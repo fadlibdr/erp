@@ -39,13 +39,13 @@ final class User extends Authenticatable implements FilamentUser, HasTenants
         return true; // real gating (roles/status) is a later pass; all users reach the admin panel
     }
 
-    /** @return BelongsToMany<Company> */
+    /** @return BelongsToMany<Company, $this> */
     public function companies(): BelongsToMany
     {
         return $this->belongsToMany(Company::class, 'company_user');
     }
 
-    /** @return Collection<int, Model> */
+    /** @return Collection<int, Company> */
     public function getTenants(Panel $panel): Collection
     {
         return $this->companies;
