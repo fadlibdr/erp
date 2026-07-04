@@ -118,7 +118,19 @@ Verified in-session: `php bin/domain-tests.php` → **24 passed** (material-bill
 
 The seam held across all four: every write is an Action publishing a fact the outbox relay fans to Finance (and projections); `domain → {Finance, Tax} → Platform` stayed green, including the new `Payroll` layer. `bin/domain-tests.php` grew **24 → 29**; feature tests `MaterialIssueCostingTest`, `SettlementPathTest`, `PayrollRunTest` cover the flows end-to-end (team-verified).
 
-**Deferred to Pass 6+:** December PPh-21 annual (Pasal 17) true-up · BPJS/PPh remittance payments · partial/over-receipt matching · uang-muka amortization schedule · AR/AP aging · native tender, equipment, doc-control, HSE · the offline PWA · the `epcctl` upgrade CLI.
+## What Pass 6 adds
+
+**Operational UI — every backend workflow is now drivable from the panel**, styled in GARIS. Six Actions that had no screen (`RunPayroll`, `PayVendorBills`, `ReceiveCustomerPayment`, `ReleaseRetention`, `ReceiveGoods`, `IssueMaterials`) got one, and the modules they live in got resources:
+- **Data Induk** — Vendor, Karyawan (PTKP), Item/Material, Gudang masters.
+- **Penggajian** — a "Jalankan Penggajian" action (employees × period → `RunPayroll`) and a read-only run + per-employee breakdown.
+- **Hutang / Piutang** — a "Bayar Terpilih" bulk action pays approved bills (`PayVendorBills`), a PaymentBatch viewer, and the AR sub-ledger with "Terima Pembayaran" + "Lepas Retensi" (Lunas stamp on paid).
+- **Pengadaan / Inventaris** — "Terima Barang" on a PO (`ReceiveGoods` → GRN + GR/IR + moving-average stock) and "Buat Pemakaian" (`IssueMaterials` → project cost).
+
+The pass also fixed a **panel-wide latent bug**: Filament's relationship-based tenancy needs `Company->relation()`, which the dependency law forbids — so *no create form could save a record*. A `BaseResource` / `BaseCreateRecord` now scope to the current company manually (`company_id` filter + inject on create), and the missing `belongsTo` relations were added, so every create form saves a correctly tenant-scoped record.
+
+Verified against real Postgres: `composer check` green — Pint, PHPStan L8, deptrac (0), and **36 Pest tests** including Livewire tests that drive each new action end-to-end (payroll → balanced labor journal; bulk-pay → paid + batch; AR receipt + retention release; goods-receipt → GRN + accrual + stock; material issue → moving-average cost). Confirmed on the live staging panel by screenshot.
+
+**Deferred to Pass 7+:** multi-line goods-receipt/issue in one document · reporting (P&L, aging, trial balance) · December PPh-21 annual (Pasal 17) true-up · BPJS/PPh remittance payments · uang-muka amortization schedule · native tender, equipment, doc-control, HSE · the offline PWA · the `epcctl` upgrade CLI.
 
 ## License
 
