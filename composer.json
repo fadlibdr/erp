@@ -56,7 +56,8 @@
     },
     "scripts": {
         "post-autoload-dump": [
-            "@php artisan package:discover --ansi"
+            "@php artisan package:discover --ansi",
+            "@php artisan filament:upgrade"
         ],
         "test": [
             "@php vendor/bin/pest"
